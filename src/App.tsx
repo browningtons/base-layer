@@ -194,7 +194,7 @@ export default function PerformanceRadar() {
     return `${year}-W${String(week).padStart(2, '0')}`;
   };
 
-  const snapshotWeek = () => {
+  // const snapshotWeek = () => {
   //   const snapshot = {
   //     weekEnding: weekKey,
   //     capturedAt: new Date().toISOString(),
