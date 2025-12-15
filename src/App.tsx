@@ -179,6 +179,24 @@ export default function PerformanceRadar() {
     return `${year}-W${String(week).padStart(2, '0')}`;
   };
 
+  const snapshotWeek = () => {
+    const snapshot = {
+      weekEnding: weekKey,
+      capturedAt: new Date().toISOString(),
+      metrics: {
+        body: Object.fromEntries(bodyMetrics.map(m => [m.id, m.current])),
+        mind: Object.fromEntries(mindMetrics.map(m => [m.id, m.current])),
+        family: Object.fromEntries(familyMetrics.map(m => [m.id, m.current])),
+        social: Object.fromEntries(socialMetrics.map(m => [m.id, m.current]))
+      }
+    };
+  
+    localStorage.setItem(
+      `base-layer:snapshot:${weekKey}`,
+      JSON.stringify(snapshot)
+    );
+  };
+
   const handleUpdateMetric = (id, field, value) => {
     const val = parseFloat(value) || 0;
     const category =
@@ -349,6 +367,19 @@ export default function PerformanceRadar() {
     if (passes(current, goal)) return 2;  
     if (passes(current, avg)) return 1;   
     return 0;                             
+  };
+
+  const getTargetForMetric = (metric) => {
+    const { current, avg, goal, elite, type } = metric;
+    const isLowerBetter = type === 'lower_better';
+  
+    const worse = (a, b) => isLowerBetter ? a > b : a < b;
+  
+    if (worse(current, avg)) return avg;
+    if (worse(current, goal)) return goal;
+    if (worse(current, elite)) return elite;
+  
+    return current; // maintain
   };
 
   const getOverallStatus = () => {
@@ -575,18 +606,31 @@ export default function PerformanceRadar() {
           <p className="text-gray-500">Integrate Your Parts. Master Your Life</p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>Week:</span>
-          <input
-            type="week"
-            value={weekInputValue(weekKey)}
-            onChange={(e) => {
-              const [year, week] = e.target.value.split('-W');
-              const d = new Date(year, 0, 1 + (week - 1) * 7);
-              setWeekKey(getWeekKey(d));
-            }}
-            className="border rounded px-2 py-1 text-sm bg-white"
-          />
+        <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-500">
+        {/* Week selector */}
+          <div className="flex items-center gap-2">
+            <span>Week:</span>
+            <input
+              type="week"
+              value={weekInputValue(weekKey)}
+              onChange={(e) => {
+                const [year, week] = e.target.value.split('-W');
+                const d = new Date(year, 0, 1 + (week - 1) * 7);
+                setWeekKey(getWeekKey(d));
+              }}
+              className="border rounded px-2 py-1 text-sm bg-white"
+            />
+          </div>
+        
+          {/* Week-level actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={snapshotWeek}
+              className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
+            >
+              Snapshot Week
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap justify-center gap-2">
