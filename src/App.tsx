@@ -26,12 +26,12 @@ const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
   };
 };
 
-const getWeekKey = (date = new Date()) => {
-  const d = new Date(date);
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay()); // Sunday start
-  return d.toISOString().slice(0,10);
-};
+// const getWeekKey = (date = new Date()) => {
+//   const d = new Date(date);
+//   d.setHours(0,0,0,0);
+//   d.setDate(d.getDate() - d.getDay()); // Sunday start
+//   return d.toISOString().slice(0,10);
+// };
 
 const describeArc = (x, y, innerRadius, outerRadius, startAngle, endAngle) => {
     var start = polarToCartesian(x, y, outerRadius, endAngle);
@@ -68,17 +68,17 @@ const autoThresholds = (baseMetric) => {
   };
 };
 
-const loadWeekly = (baseMetrics, category, weekKey) => {
-  const key = `base-layer:${category}:${weekKey}`;
-  const stored = JSON.parse(localStorage.getItem(key) || '{}');
+// const loadWeekly = (baseMetrics, category, weekKey) => {
+//   const key = `base-layer:${category}:${weekKey}`;
+//   const stored = JSON.parse(localStorage.getItem(key) || '{}');
 
-  return baseMetrics.map(m =>
-    autoThresholds({
-      ...m,
-      current: stored[m.id] ?? m.current,
-    })
-  );
-};
+//   return baseMetrics.map(m =>
+//     autoThresholds({
+//       ...m,
+//       current: stored[m.id] ?? m.current,
+//     })
+//   );
+// };
 
 // --- Data Sets (7 Metrics Each) ---
 
@@ -162,10 +162,10 @@ export default function PerformanceRadar() {
   const [weekKey, setWeekKey] = useState(getWeekKey());
   const [isEditing, setIsEditing] = useState(false);
 
-  const weeklyKey = (category) =>
-    `base-layer:${category}:${weekKey}`;
+  // const weeklyKey = (category) =>
+  //   `base-layer:${category}:${weekKey}`;
 
-  // ---- METRIC STATE (THIS WAS MISSING) ----
+  // ---- METRIC STATE ----
   const [bodyMetrics, setBodyMetrics] = useState(() =>
     loadWeekly(BODY_METRICS, 'body', weekKey)
   );
@@ -195,53 +195,51 @@ export default function PerformanceRadar() {
   };
 
   const snapshotWeek = () => {
-    const snapshot = {
-      weekEnding: weekKey,
-      capturedAt: new Date().toISOString(),
-      metrics: {
-        body: Object.fromEntries(bodyMetrics.map(m => [m.id, m.current])),
-        mind: Object.fromEntries(mindMetrics.map(m => [m.id, m.current])),
-        family: Object.fromEntries(familyMetrics.map(m => [m.id, m.current])),
-        social: Object.fromEntries(socialMetrics.map(m => [m.id, m.current]))
-      }
-    };
+  //   const snapshot = {
+  //     weekEnding: weekKey,
+  //     capturedAt: new Date().toISOString(),
+  //     metrics: {
+  //       body: Object.fromEntries(bodyMetrics.map(m => [m.id, m.current])),
+  //       mind: Object.fromEntries(mindMetrics.map(m => [m.id, m.current])),
+  //       family: Object.fromEntries(familyMetrics.map(m => [m.id, m.current])),
+  //       social: Object.fromEntries(socialMetrics.map(m => [m.id, m.current]))
+  //     }
+  //   };
 
-    localStorage.setItem(
-      `base-layer:snapshot:${weekKey}`,
-      JSON.stringify(snapshot)
-    );
-  };
+  //   localStorage.setItem(
+  //     `base-layer:snapshot:${weekKey}`,
+  //     JSON.stringify(snapshot)
+  //   );
+  // };
 
   const handleUpdateMetric = (id, field, value) => {
     const val = parseFloat(value) || 0;
-    const category =
-      bodyMetrics.some(m => m.id === id) ? 'body' :
-      mindMetrics.some(m => m.id === id) ? 'mind' :
-      familyMetrics.some(m => m.id === id) ? 'family' :
-      'social';
 
-    const key = weeklyKey(category);
-    const existing = JSON.parse(localStorage.getItem(key) || '{}');
-    localStorage.setItem(key, JSON.stringify({ ...existing, [id]: val }));
+    const update = (setFn) =>
+      setFn(prev =>
+        prev.map(m =>
+          m.id === id
+            ? autoThresholds({ ...m, [field]: val })
+            : m
+        )
+      );
 
-    const update = (prev) => prev.map(m => m.id === id ? { ...m, [field]: val } : m).map(autoThresholds);
-    
-    if (bodyMetrics.some(m => m.id === id)) setBodyMetrics(update);
-    else if (mindMetrics.some(m => m.id === id)) setMindMetrics(update);
-    else if (familyMetrics.some(m => m.id === id)) setFamilyMetrics(update);
-    else if (socialMetrics.some(m => m.id === id)) setSocialMetrics(update);
+    if (bodyMetrics.some(m => m.id === id)) update(setBodyMetrics);
+    else if (mindMetrics.some(m => m.id === id)) update(setMindMetrics);
+    else if (familyMetrics.some(m => m.id === id)) update(setFamilyMetrics);
+    else if (socialMetrics.some(m => m.id === id)) update(setSocialMetrics);
   };
 
-  useEffect(() => {
-    if (activeTab === 'body')
-      setBodyMetrics(loadWeekly(BODY_METRICS, 'body', weekKey));
-    if (activeTab === 'mind')
-      setMindMetrics(loadWeekly(MIND_METRICS, 'mind', weekKey));
-    if (activeTab === 'family')
-      setFamilyMetrics(loadWeekly(FAMILY_METRICS, 'family', weekKey));
-    if (activeTab === 'social')
-      setSocialMetrics(loadWeekly(SOCIAL_METRICS, 'social', weekKey));
-  }, [activeTab, weekKey]);
+  // useEffect(() => {
+  //   if (activeTab === 'body')
+  //     setBodyMetrics(loadWeekly(BODY_METRICS, 'body', weekKey));
+  //   if (activeTab === 'mind')
+  //     setMindMetrics(loadWeekly(MIND_METRICS, 'mind', weekKey));
+  //   if (activeTab === 'family')
+  //     setFamilyMetrics(loadWeekly(FAMILY_METRICS, 'family', weekKey));
+  //   if (activeTab === 'social')
+  //     setSocialMetrics(loadWeekly(SOCIAL_METRICS, 'social', weekKey));
+  // }, [activeTab, weekKey]);
 
   // --- Chart Math ---
   const normalize = (metric, value) => {
