@@ -166,17 +166,17 @@ export default function PerformanceRadar() {
   //   `base-layer:${category}:${weekKey}`;
 
   // ---- METRIC STATE ----
-  const [bodyMetrics, setBodyMetrics] = useState(() =>
-    loadWeekly(BODY_METRICS, 'body', weekKey)
+  const [bodyMetrics, setBodyMetrics] = useState(
+    BODY_METRICS.map(autoThresholds)
   );
-  const [mindMetrics, setMindMetrics] = useState(() =>
-    loadWeekly(MIND_METRICS, 'mind', weekKey)
+  const [mindMetrics, setMindMetrics] = useState(
+    MIND_METRICS.map(autoThresholds)
   );
-  const [familyMetrics, setFamilyMetrics] = useState(() =>
-    loadWeekly(FAMILY_METRICS, 'family', weekKey)
+  const [familyMetrics, setFamilyMetrics] = useState(
+    FAMILY_METRICS.map(autoThresholds)
   );
-  const [socialMetrics, setSocialMetrics] = useState(() =>
-    loadWeekly(SOCIAL_METRICS, 'social', weekKey)
+  const [socialMetrics, setSocialMetrics] = useState(
+    SOCIAL_METRICS.map(autoThresholds)
   );
 
   // ---- DERIVED ---- 
