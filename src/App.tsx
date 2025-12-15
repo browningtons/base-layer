@@ -61,6 +61,14 @@ const autoThresholds = (baseMetric) => {
   };
 };
 
+const getWeekKey = (date = new Date()) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay()); // Sunday start
+  return d.toISOString().slice(0, 10);
+};
+
+
 // --- Data Sets (7 Metrics Each) ---
 
 const BODY_METRICS = [
