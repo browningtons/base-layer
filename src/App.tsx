@@ -26,13 +26,6 @@ const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
   };
 };
 
-// const getWeekKey = (date = new Date()) => {
-//   const d = new Date(date);
-//   d.setHours(0,0,0,0);
-//   d.setDate(d.getDate() - d.getDay()); // Sunday start
-//   return d.toISOString().slice(0,10);
-// };
-
 const describeArc = (x, y, innerRadius, outerRadius, startAngle, endAngle) => {
     var start = polarToCartesian(x, y, outerRadius, endAngle);
     var end = polarToCartesian(x, y, outerRadius, startAngle);
@@ -67,18 +60,6 @@ const autoThresholds = (baseMetric) => {
     goal: round(weak + (range * 0.66))
   };
 };
-
-// const loadWeekly = (baseMetrics, category, weekKey) => {
-//   const key = `base-layer:${category}:${weekKey}`;
-//   const stored = JSON.parse(localStorage.getItem(key) || '{}');
-
-//   return baseMetrics.map(m =>
-//     autoThresholds({
-//       ...m,
-//       current: stored[m.id] ?? m.current,
-//     })
-//   );
-// };
 
 // --- Data Sets (7 Metrics Each) ---
 
@@ -194,24 +175,6 @@ export default function PerformanceRadar() {
     return `${year}-W${String(week).padStart(2, '0')}`;
   };
 
-  // const snapshotWeek = () => {
-  //   const snapshot = {
-  //     weekEnding: weekKey,
-  //     capturedAt: new Date().toISOString(),
-  //     metrics: {
-  //       body: Object.fromEntries(bodyMetrics.map(m => [m.id, m.current])),
-  //       mind: Object.fromEntries(mindMetrics.map(m => [m.id, m.current])),
-  //       family: Object.fromEntries(familyMetrics.map(m => [m.id, m.current])),
-  //       social: Object.fromEntries(socialMetrics.map(m => [m.id, m.current]))
-  //     }
-  //   };
-
-  //   localStorage.setItem(
-  //     `base-layer:snapshot:${weekKey}`,
-  //     JSON.stringify(snapshot)
-  //   );
-  // };
-
   const handleUpdateMetric = (id, field, value) => {
     const val = parseFloat(value) || 0;
 
@@ -229,17 +192,6 @@ export default function PerformanceRadar() {
     else if (familyMetrics.some(m => m.id === id)) update(setFamilyMetrics);
     else if (socialMetrics.some(m => m.id === id)) update(setSocialMetrics);
   };
-
-  // useEffect(() => {
-  //   if (activeTab === 'body')
-  //     setBodyMetrics(loadWeekly(BODY_METRICS, 'body', weekKey));
-  //   if (activeTab === 'mind')
-  //     setMindMetrics(loadWeekly(MIND_METRICS, 'mind', weekKey));
-  //   if (activeTab === 'family')
-  //     setFamilyMetrics(loadWeekly(FAMILY_METRICS, 'family', weekKey));
-  //   if (activeTab === 'social')
-  //     setSocialMetrics(loadWeekly(SOCIAL_METRICS, 'social', weekKey));
-  // }, [activeTab, weekKey]);
 
   // --- Chart Math ---
   const normalize = (metric, value) => {
