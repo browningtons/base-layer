@@ -144,27 +144,31 @@ const CHART_RADIUS = 120;
 const CHART_CENTER = 150;
 
 export default function PerformanceRadar() {
-  const [activeTab, setActiveTab] = useState('overview'); 
-  const [overviewMode, setOverviewMode] = useState('sunburst'); 
-  const [hoveredPoint, setHoveredPoint] = useState(null); 
+  // ---- CORE STATE ----
+  const [activeTab, setActiveTab] = useState('overview');
+  const [overviewMode, setOverviewMode] = useState('sunburst');
+  const [hoveredPoint, setHoveredPoint] = useState(null);
   const [weekKey, setWeekKey] = useState(getWeekKey());
-  const weeklyKey = (category) => `base-layer:${category}:${weekKey}`;
-  
-  const [bodyMetrics, setBodyMetrics] = useState(() =>
-    loadWeekly(BODY_METRICS, 'body')
-    );
-  const [mindMetrics, setMindMetrics] = useState(() =>
-    loadWeekly(MIND_METRICS, 'mind')
-    );
-  const [familyMetrics, setFamilyMetrics] = useState(() =>
-    loadWeekly(FAMILY_METRICS, 'family')
-    );
-  const [socialMetrics, setSocialMetrics] = useState(() =>
-    loadWeekly(SOCIAL_METRICS, 'social')
-    );
-  
   const [isEditing, setIsEditing] = useState(false);
 
+  const weeklyKey = (category) =>
+    `base-layer:${category}:${weekKey}`;
+
+  // ---- METRIC STATE (THIS WAS MISSING) ----
+  const [bodyMetrics, setBodyMetrics] = useState(() =>
+    loadWeekly(BODY_METRICS, 'body', weekKey)
+  );
+  const [mindMetrics, setMindMetrics] = useState(() =>
+    loadWeekly(MIND_METRICS, 'mind', weekKey)
+  );
+  const [familyMetrics, setFamilyMetrics] = useState(() =>
+    loadWeekly(FAMILY_METRICS, 'family', weekKey)
+  );
+  const [socialMetrics, setSocialMetrics] = useState(() =>
+    loadWeekly(SOCIAL_METRICS, 'social', weekKey)
+  );
+
+  // ---- DERIVED ---- 
   const currentMetrics = activeTab === 'body' ? bodyMetrics : 
                          activeTab === 'mind' ? mindMetrics : 
                          activeTab === 'family' ? familyMetrics :
@@ -190,7 +194,7 @@ export default function PerformanceRadar() {
         social: Object.fromEntries(socialMetrics.map(m => [m.id, m.current]))
       }
     };
-  
+
     localStorage.setItem(
       `base-layer:snapshot:${weekKey}`,
       JSON.stringify(snapshot)
@@ -218,10 +222,14 @@ export default function PerformanceRadar() {
   };
 
   useEffect(() => {
-    if (activeTab === 'body') setBodyMetrics(m => loadWeekly(m, 'body'));
-    if (activeTab === 'mind') setMindMetrics(m => loadWeekly(m, 'mind'));
-    if (activeTab === 'family') setFamilyMetrics(m => loadWeekly(m, 'family'));
-    if (activeTab === 'social') setSocialMetrics(m => loadWeekly(m, 'social'));
+    if (activeTab === 'body')
+      setBodyMetrics(loadWeekly(BODY_METRICS, 'body', weekKey));
+    if (activeTab === 'mind')
+      setMindMetrics(loadWeekly(MIND_METRICS, 'mind', weekKey));
+    if (activeTab === 'family')
+      setFamilyMetrics(loadWeekly(FAMILY_METRICS, 'family', weekKey));
+    if (activeTab === 'social')
+      setSocialMetrics(loadWeekly(SOCIAL_METRICS, 'social', weekKey));
   }, [activeTab, weekKey]);
 
   // --- Chart Math ---
