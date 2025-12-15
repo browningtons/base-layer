@@ -598,16 +598,6 @@ export default function PerformanceRadar() {
               className="border rounded px-2 py-1 text-sm bg-white"
             />
           </div>
-        
-          {/* Week-level actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={snapshotWeek}
-              className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
-            >
-              Snapshot Week
-            </button>
-          </div>
         </div>
 
         <div className="flex flex-wrap justify-center gap-2">
