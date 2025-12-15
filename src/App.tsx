@@ -33,23 +33,6 @@ const getWeekKey = (date = new Date()) => {
   return d.toISOString().slice(0,10);
 };
 
-const loadWeekly = (baseMetrics, category, weekKey) => {
-  try {
-    const key = `base-layer:${category}:${weekKey}`;
-    const stored = JSON.parse(localStorage.getItem(key) || '{}');
-
-    return baseMetrics.map(m =>
-      autoThresholds({
-        ...m,
-        current: stored[m.id] ?? m.current
-      })
-    );
-  } catch (e) {
-    console.error('loadWeekly failed', e);
-    return baseMetrics;
-  }
-};
-
 const describeArc = (x, y, innerRadius, outerRadius, startAngle, endAngle) => {
     var start = polarToCartesian(x, y, outerRadius, endAngle);
     var end = polarToCartesian(x, y, outerRadius, startAngle);
@@ -83,6 +66,23 @@ const autoThresholds = (baseMetric) => {
     avg: round(weak + (range * 0.33)),
     goal: round(weak + (range * 0.66))
   };
+};
+
+const loadWeekly = (baseMetrics, category, weekKey) => {
+  try {
+    const key = `base-layer:${category}:${weekKey}`;
+    const stored = JSON.parse(localStorage.getItem(key) || '{}');
+
+    return baseMetrics.map(m =>
+      autoThresholds({
+        ...m,
+        current: stored[m.id] ?? m.current
+      })
+    );
+  } catch (e) {
+    console.error('loadWeekly failed', e);
+    return baseMetrics;
+  }
 };
 
 // --- Data Sets (7 Metrics Each) ---
