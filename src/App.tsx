@@ -69,20 +69,15 @@ const autoThresholds = (baseMetric) => {
 };
 
 const loadWeekly = (baseMetrics, category, weekKey) => {
-  try {
-    const key = `base-layer:${category}:${weekKey}`;
-    const stored = JSON.parse(localStorage.getItem(key) || '{}');
+  const key = `base-layer:${category}:${weekKey}`;
+  const stored = JSON.parse(localStorage.getItem(key) || '{}');
 
-    return baseMetrics.map(m =>
-      autoThresholds({
-        ...m,
-        current: stored[m.id] ?? m.current
-      })
-    );
-  } catch (e) {
-    console.error('loadWeekly failed', e);
-    return baseMetrics;
-  }
+  return baseMetrics.map(m =>
+    autoThresholds({
+      ...m,
+      current: stored[m.id] ?? m.current,
+    })
+  );
 };
 
 // --- Data Sets (7 Metrics Each) ---
