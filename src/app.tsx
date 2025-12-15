@@ -26,6 +26,14 @@ const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
   };
 };
 
+const getWeekKey = (date = new Date()) => {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay()); // Sunday start
+  return d.toISOString().slice(0,10);
+};
+
+
 const describeArc = (x, y, innerRadius, outerRadius, startAngle, endAngle) => {
     var start = polarToCartesian(x, y, outerRadius, endAngle);
     var end = polarToCartesian(x, y, outerRadius, startAngle);
@@ -139,11 +147,21 @@ export default function PerformanceRadar() {
   const [activeTab, setActiveTab] = useState('overview'); 
   const [overviewMode, setOverviewMode] = useState('sunburst'); 
   const [hoveredPoint, setHoveredPoint] = useState(null); 
+  const [weekKey, setWeekKey] = useState(getWeekKey());
+  const weeklyKey = (category) => `base-layer:${category}:${weekKey}`;
   
-  const [bodyMetrics, setBodyMetrics] = useState(BODY_METRICS);
-  const [mindMetrics, setMindMetrics] = useState(MIND_METRICS);
-  const [familyMetrics, setFamilyMetrics] = useState(FAMILY_METRICS);
-  const [socialMetrics, setSocialMetrics] = useState(SOCIAL_METRICS);
+  const [bodyMetrics, setBodyMetrics] = useState(() =>
+    loadWeekly(BODY_METRICS, 'body')
+    );
+  const [mindMetrics, setMindMetrics] = useState(() =>
+    loadWeekly(MIND_METRICS, 'mind')
+    );
+  const [familyMetrics, setFamilyMetrics] = useState(() =>
+    loadWeekly(FAMILY_METRICS, 'family')
+    );
+  const [socialMetrics, setSocialMetrics] = useState(() =>
+    loadWeekly(SOCIAL_METRICS, 'social')
+    );
   
   const [isEditing, setIsEditing] = useState(false);
 
@@ -152,8 +170,27 @@ export default function PerformanceRadar() {
                          activeTab === 'family' ? familyMetrics :
                          activeTab === 'social' ? socialMetrics : [];
 
+  const weekInputValue = (weekKey) => {
+    const d = new Date(weekKey);
+    const year = d.getFullYear();
+    const week = Math.ceil(
+      ((d - new Date(year, 0, 1)) / 86400000 + new Date(year, 0, 1).getDay() + 1) / 7
+    );
+    return `${year}-W${String(week).padStart(2, '0')}`;
+  };
+
   const handleUpdateMetric = (id, field, value) => {
     const val = parseFloat(value) || 0;
+    const category =
+      bodyMetrics.some(m => m.id === id) ? 'body' :
+      mindMetrics.some(m => m.id === id) ? 'mind' :
+      familyMetrics.some(m => m.id === id) ? 'family' :
+      'social';
+
+    const key = weeklyKey(category);
+    const existing = JSON.parse(localStorage.getItem(key) || '{}');
+    localStorage.setItem(key, JSON.stringify({ ...existing, [id]: val }));
+
     const update = (prev) => prev.map(m => m.id === id ? { ...m, [field]: val } : m).map(autoThresholds);
     
     if (bodyMetrics.some(m => m.id === id)) setBodyMetrics(update);
@@ -161,6 +198,13 @@ export default function PerformanceRadar() {
     else if (familyMetrics.some(m => m.id === id)) setFamilyMetrics(update);
     else if (socialMetrics.some(m => m.id === id)) setSocialMetrics(update);
   };
+
+  useEffect(() => {
+    if (activeTab === 'body') setBodyMetrics(m => loadWeekly(m, 'body'));
+    if (activeTab === 'mind') setMindMetrics(m => loadWeekly(m, 'mind'));
+    if (activeTab === 'family') setFamilyMetrics(m => loadWeekly(m, 'family'));
+    if (activeTab === 'social') setSocialMetrics(m => loadWeekly(m, 'social'));
+  }, [activeTab, weekKey]);
 
   // --- Chart Math ---
   const normalize = (metric, value) => {
@@ -529,6 +573,20 @@ export default function PerformanceRadar() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Base Layer</h1>
           <p className="text-gray-500">Integrate Your Parts. Master Your Life</p>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <span>Week:</span>
+          <input
+            type="week"
+            value={weekInputValue(weekKey)}
+            onChange={(e) => {
+              const [year, week] = e.target.value.split('-W');
+              const d = new Date(year, 0, 1 + (week - 1) * 7);
+              setWeekKey(getWeekKey(d));
+            }}
+            className="border rounded px-2 py-1 text-sm bg-white"
+          />
         </div>
 
         <div className="flex flex-wrap justify-center gap-2">
