@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Target, Activity, Users, Heart, Edit2, Save, LayoutDashboard, ArrowUpCircle, Info, PieChart, Triangle, HelpCircle, Trophy, AlertCircle, Sparkles } from 'lucide-react';
 
 // --- ARTISTIC PALETTE (Monet Inspired) ---
@@ -17,22 +17,72 @@ const PALETTE = {
   slate:  '#64748b'
 };
 
+type MetricType = 'higher_better' | 'lower_better';
+type Category = 'body' | 'mind' | 'family' | 'social';
+type ActiveTab = 'overview' | Category;
+type OverviewMode = 'sunburst' | 'triangle';
+type MetricRank = 0 | 1 | 2 | 3;
+type EditableMetricField = 'current' | 'weak' | 'elite';
+
+interface MetricInput {
+  id: string;
+  label: string;
+  unit: string;
+  current: number;
+  weak: number;
+  elite: number;
+  type: MetricType;
+  desc: string;
+  tip: string;
+}
+
+interface Metric extends MetricInput {
+  avg: number;
+  goal: number;
+}
+
+interface OverviewDatum {
+  id: Category;
+  label: string;
+  current: number;
+  elite: number;
+  color: string;
+}
+
+interface HoveredPoint {
+  x: number;
+  y: number;
+  val: number;
+  unit: string;
+  label: string;
+  color?: string;
+}
+
+interface CategoryScoreSummary {
+  body: number;
+  mind: number;
+  family: number;
+  social: number;
+  level: number;
+  data: OverviewDatum[];
+}
+
 // --- STATIC HELPERS ---
-const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
-  var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+  const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
   return {
-    x: centerX + (radius * Math.cos(angleInRadians)),
-    y: centerY + (radius * Math.sin(angleInRadians))
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians)
   };
 };
 
-const describeArc = (x, y, innerRadius, outerRadius, startAngle, endAngle) => {
-    var start = polarToCartesian(x, y, outerRadius, endAngle);
-    var end = polarToCartesian(x, y, outerRadius, startAngle);
-    var startInner = polarToCartesian(x, y, innerRadius, endAngle);
-    var endInner = polarToCartesian(x, y, innerRadius, startAngle);
+const describeArc = (x: number, y: number, innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) => {
+    const start = polarToCartesian(x, y, outerRadius, endAngle);
+    const end = polarToCartesian(x, y, outerRadius, startAngle);
+    const startInner = polarToCartesian(x, y, innerRadius, endAngle);
+    const endInner = polarToCartesian(x, y, innerRadius, startAngle);
 
-    var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
 
     return [
         "M", start.x, start.y, 
@@ -43,11 +93,11 @@ const describeArc = (x, y, innerRadius, outerRadius, startAngle, endAngle) => {
     ].join(" ");
 };
 
-const autoThresholds = (baseMetric) => {
+const autoThresholds = (baseMetric: MetricInput | Metric): Metric => {
   const { weak, elite } = baseMetric;
   const range = elite - weak;
   
-  const round = (num) => {
+  const round = (num: number) => {
     if (Math.abs(num) >= 100) {
         return Math.round(num / 10) * 10;
     }
@@ -61,7 +111,7 @@ const autoThresholds = (baseMetric) => {
   };
 };
 
-const getWeekKey = (date = new Date()) => {
+const getWeekKey = (date: Date | string | number = new Date()) => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - d.getDay()); // Sunday start
@@ -71,7 +121,7 @@ const getWeekKey = (date = new Date()) => {
 
 // --- Data Sets (7 Metrics Each) ---
 
-const BODY_METRICS = [
+const BODY_METRICS = ([
   { id: 'miles', label: 'Miles', unit: 'mi/wk', current: 13, weak: 3, elite: 30, type: 'higher_better', 
     desc: 'Total weekly running volume.', tip: 'Increase mileage by max 10% per week to build durability without injury.' },
   { id: 'elevation', label: 'Elevation', unit: 'ft/wk', current: 2500, weak: 500, elite: 4000, type: 'higher_better',
@@ -86,9 +136,9 @@ const BODY_METRICS = [
     desc: 'Max strict pullups.', tip: 'Use "negatives" (jumping up and lowering slowly) to build initial strength.' },
   { id: 'bench', label: 'Bench', unit: 'lbs', current: 135, weak: 115, elite: 225, type: 'higher_better',
     desc: '1-Rep Max Bench Press.', tip: 'Focus on progressive overload; add small fractional weights every session.' },
-].map(autoThresholds); 
+] satisfies MetricInput[]).map(autoThresholds); 
 
-const MIND_METRICS = [
+const MIND_METRICS = ([
   { id: 'meditation_count', label: 'Meditate', unit: 'count/wk', current: 5, weak: 0, elite: 7, type: 'higher_better',
     desc: 'Number of meditation sessions.', tip: 'Attach meditation to an existing habit (e.g., right after coffee) to ensure consistency.' },
   { id: 'meditation_time', label: 'Length', unit: 'min/wk', current: 60, weak: 0, elite: 120, type: 'higher_better',
@@ -103,9 +153,9 @@ const MIND_METRICS = [
     desc: 'Daily fasting window.', tip: 'Stop eating 3 hours before bed. It improves sleep and naturally extends your fast.' },
   { id: 'deep_work', label: 'Deep Work', unit: 'hrs/wk', current: 12, weak: 0, elite: 16, type: 'higher_better',
     desc: 'Hours of distraction-free focus.', tip: 'Use the Pomodoro technique or block "Do Not Disturb" hours on your calendar.' }, 
-].map(autoThresholds);
+] satisfies MetricInput[]).map(autoThresholds);
 
-const FAMILY_METRICS = [
+const FAMILY_METRICS = ([
   { id: 'kids_time', label: 'Kid Time', unit: 'hrs/wk', current: 8, weak: 1, elite: 10, type: 'higher_better',
     desc: 'Focused 1:1 time with children.', tip: 'Let the child lead the play. Put your phone in another room.' },
   { id: 'rituals', label: 'Rituals', unit: 'events/wk', current: 2, weak: 0, elite: 7, type: 'higher_better',
@@ -120,9 +170,9 @@ const FAMILY_METRICS = [
     desc: 'Family coordination/culture sync.', tip: 'Discuss "Rose, Thorn, Bud" (good, bad, potential) for the week.' }, 
   { id: 'parents', label: 'Family Contact', unit: 'calls/wk', current: 4, weak: 0, elite: 3, type: 'higher_better',
     desc: 'Connecting with extended family.', tip: 'Schedule a recurring calendar event for calls so it doesn\'t slip.' }, 
-].map(autoThresholds);
+] satisfies MetricInput[]).map(autoThresholds);
 
-const SOCIAL_METRICS = [
+const SOCIAL_METRICS = ([
   { id: 'creative', label: 'Creative', unit: 'hrs/wk', current: 10, weak: 0, elite: 10, type: 'higher_better',
     desc: 'Time on creative expression.', tip: 'Focus on the process of making, not the quality of the result.' },
   { id: 'community', label: 'Community', unit: 'events/mo', current: 0, weak: 0, elite: 4, type: 'higher_better',
@@ -137,7 +187,7 @@ const SOCIAL_METRICS = [
     desc: 'Time spent mentoring others.', tip: 'Offer to help someone junior to you with a specific skill you have mastered.' }, 
   { id: 'service', label: 'Service', unit: 'acts/mo', current: 1, weak: 0, elite: 4, type: 'higher_better',
     desc: 'Acts of service/volunteering.', tip: 'Find a local cause you care about and commit just one hour a month.' }, 
-].map(autoThresholds);
+] satisfies MetricInput[]).map(autoThresholds);
 
 // --- Config Constants ---
 const CHART_RADIUS = 120;
@@ -145,9 +195,9 @@ const CHART_CENTER = 150;
 
 export default function PerformanceRadar() {
   // ---- CORE STATE ----
-  const [activeTab, setActiveTab] = useState('overview');
-  const [overviewMode, setOverviewMode] = useState('sunburst');
-  const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  const [overviewMode, setOverviewMode] = useState<OverviewMode>('sunburst');
+  const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
   const [weekKey, setWeekKey] = useState(getWeekKey());
   const [isEditing, setIsEditing] = useState(false);
 
@@ -155,38 +205,35 @@ export default function PerformanceRadar() {
   //   `base-layer:${category}:${weekKey}`;
 
   // ---- METRIC STATE ----
-  const [bodyMetrics, setBodyMetrics] = useState(
-    BODY_METRICS.map(autoThresholds)
-  );
-  const [mindMetrics, setMindMetrics] = useState(
-    MIND_METRICS.map(autoThresholds)
-  );
-  const [familyMetrics, setFamilyMetrics] = useState(
-    FAMILY_METRICS.map(autoThresholds)
-  );
-  const [socialMetrics, setSocialMetrics] = useState(
-    SOCIAL_METRICS.map(autoThresholds)
-  );
+  const [bodyMetrics, setBodyMetrics] = useState<Metric[]>(BODY_METRICS);
+  const [mindMetrics, setMindMetrics] = useState<Metric[]>(MIND_METRICS);
+  const [familyMetrics, setFamilyMetrics] = useState<Metric[]>(FAMILY_METRICS);
+  const [socialMetrics, setSocialMetrics] = useState<Metric[]>(SOCIAL_METRICS);
 
   // ---- DERIVED ---- 
-  const currentMetrics = activeTab === 'body' ? bodyMetrics : 
-                         activeTab === 'mind' ? mindMetrics : 
-                         activeTab === 'family' ? familyMetrics :
-                         activeTab === 'social' ? socialMetrics : [];
+  const metricsByCategory: Record<Category, Metric[]> = {
+    body: bodyMetrics,
+    mind: mindMetrics,
+    family: familyMetrics,
+    social: socialMetrics
+  };
 
-  const weekInputValue = (weekKey) => {
-    const d = new Date(weekKey);
+  const currentMetrics = activeTab === 'overview' ? [] : metricsByCategory[activeTab];
+
+  const weekInputValue = (weekKeyValue: string) => {
+    const d = new Date(weekKeyValue);
     const year = d.getFullYear();
+    const yearStart = new Date(year, 0, 1);
     const week = Math.ceil(
-      ((d - new Date(year, 0, 1)) / 86400000 + new Date(year, 0, 1).getDay() + 1) / 7
+      ((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7
     );
     return `${year}-W${String(week).padStart(2, '0')}`;
   };
 
-  const handleUpdateMetric = (id, field, value) => {
+  const handleUpdateMetric = (id: string, field: EditableMetricField, value: string) => {
     const val = parseFloat(value) || 0;
 
-    const update = (setFn) =>
+    const update = (setFn: React.Dispatch<React.SetStateAction<Metric[]>>) =>
       setFn(prev =>
         prev.map(m =>
           m.id === id
@@ -195,14 +242,21 @@ export default function PerformanceRadar() {
         )
       );
 
-    if (bodyMetrics.some(m => m.id === id)) update(setBodyMetrics);
-    else if (mindMetrics.some(m => m.id === id)) update(setMindMetrics);
-    else if (familyMetrics.some(m => m.id === id)) update(setFamilyMetrics);
-    else if (socialMetrics.some(m => m.id === id)) update(setSocialMetrics);
+    const categoryCollections: Array<{ metrics: Metric[]; setMetrics: React.Dispatch<React.SetStateAction<Metric[]>> }> = [
+      { metrics: bodyMetrics, setMetrics: setBodyMetrics },
+      { metrics: mindMetrics, setMetrics: setMindMetrics },
+      { metrics: familyMetrics, setMetrics: setFamilyMetrics },
+      { metrics: socialMetrics, setMetrics: setSocialMetrics }
+    ];
+
+    const match = categoryCollections.find(({ metrics }) => metrics.some(m => m.id === id));
+    if (match) {
+      update(match.setMetrics);
+    }
   };
 
   // --- Chart Math ---
-  const normalize = (metric, value) => {
+  const normalize = (metric: Pick<Metric, 'weak' | 'elite' | 'type'>, value: number) => {
     const { weak, elite, type } = metric;
     const val = Number.isFinite(value) ? value : 0;
     const w = Number.isFinite(weak) ? weak : 0;
@@ -223,13 +277,13 @@ export default function PerformanceRadar() {
     return (clamped - min) / (max - min);
   };
 
-  const getVisualRadius = (normalizedValue) => {
+  const getVisualRadius = (normalizedValue: number) => {
     if (normalizedValue <= 0.33) return 0.05 + (normalizedValue / 0.33) * 0.55;
     if (normalizedValue <= 0.66) return 0.60 + ((normalizedValue - 0.33) / 0.33) * 0.20;
     return 0.80 + ((normalizedValue - 0.66) / 0.34) * 0.20;
   };
 
-  const calculateCategoryScore = (metricsList) => {
+  const calculateCategoryScore = (metricsList: Metric[]) => {
     if (!metricsList || metricsList.length === 0) return 0;
     const totalProgress = metricsList.reduce((acc, m) => {
         const norm = normalize(m, m.current);
@@ -239,7 +293,7 @@ export default function PerformanceRadar() {
     return Math.round(totalProgress / metricsList.length);
   };
 
-  const overviewScores = useMemo(() => {
+  const overviewScores = useMemo<CategoryScoreSummary>(() => {
     const bodyScore = calculateCategoryScore(bodyMetrics);
     const mindScore = calculateCategoryScore(mindMetrics);
     const familyScore = calculateCategoryScore(familyMetrics);
@@ -261,13 +315,13 @@ export default function PerformanceRadar() {
     };
   }, [bodyMetrics, mindMetrics, familyMetrics, socialMetrics]);
 
-  const getRecommendation = (metricsList) => {
+  const getRecommendation = (metricsList: Metric[]) => {
     if (!metricsList || metricsList.length === 0) return null;
     const sorted = [...metricsList].sort((a, b) => normalize(a, a.current) - normalize(b, b.current));
     const weakest = sorted[0];
     
     const isLowerBetter = weakest.type === 'lower_better';
-    const isWorse = (curr, thr) => isLowerBetter ? curr > thr : curr < thr;
+    const isWorse = (curr: number, thr: number) => isLowerBetter ? curr > thr : curr < thr;
 
     let targetValue = weakest.elite;
     let targetLabel = "Elite";
@@ -286,7 +340,7 @@ export default function PerformanceRadar() {
       const strongest = sorted[0];
       const weakest = sorted[sorted.length - 1];
 
-      const quoteMap = {
+      const quoteMap: Record<Category, string> = {
           body: "Motion creates emotion. Move your body to shift your mind.",
           mind: "The mind is a muscle. Train it with stillness and focus.",
           family: "The most important work you will ever do is within the walls of your own home.",
@@ -302,7 +356,7 @@ export default function PerformanceRadar() {
 
   const insights = getInsights();
 
-  const getCoordinates = (value, index, total, radius) => {
+  const getCoordinates = (value: number, index: number, total: number, radius: number) => {
     const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
     const val = Number.isFinite(value) ? value : 0;
     return { 
@@ -311,23 +365,23 @@ export default function PerformanceRadar() {
     };
   };
 
-  const generatePath = (dataItems, valueKey, radius, center) => {
+  const generatePath = (dataItems: Array<Metric | OverviewDatum>, radius: number, center: number) => {
     return dataItems.map((item, i) => {
       let nVal;
       if (activeTab === 'overview') {
         nVal = Math.min(item.current / 100, 1.0);
       } else {
-        nVal = getVisualRadius(normalize(item, item[valueKey]));
+        nVal = getVisualRadius(normalize(item as Metric, item.current));
       }
       const coords = getCoordinates(nVal, i, dataItems.length, radius);
       return `${center + coords.x},${center + coords.y}`;
     }).join(' ');
   };
 
-  const getColorForMetric = (metric) => {
+  const getColorForMetric = (metric: Metric) => {
     const { current, avg, goal, elite, type } = metric;
     const isLowerBetter = type === 'lower_better';
-    const passes = (val, threshold) => isLowerBetter ? val <= threshold : val >= threshold;
+    const passes = (val: number, threshold: number) => isLowerBetter ? val <= threshold : val >= threshold;
 
     if (passes(current, elite)) return { stroke: PALETTE.elite, fill: PALETTE.elite }; 
     if (passes(current, goal)) return { stroke: PALETTE.fit, fill: PALETTE.fit };     
@@ -335,10 +389,10 @@ export default function PerformanceRadar() {
     return { stroke: PALETTE.weak, fill: PALETTE.weak };
   };
 
-  const getMetricRank = (metric) => {
+  const getMetricRank = (metric: Metric): MetricRank => {
     const { current, avg, goal, elite, type } = metric;
     const isLowerBetter = type === 'lower_better';
-    const passes = (val, threshold) => isLowerBetter ? val <= threshold : val >= threshold;
+    const passes = (val: number, threshold: number) => isLowerBetter ? val <= threshold : val >= threshold;
 
     if (passes(current, elite)) return 3; 
     if (passes(current, goal)) return 2;  
@@ -346,35 +400,22 @@ export default function PerformanceRadar() {
     return 0;                             
   };
 
-  const getTargetForMetric = (metric) => {
-    const { current, avg, goal, elite, type } = metric;
-    const isLowerBetter = type === 'lower_better';
-  
-    const worse = (a, b) => isLowerBetter ? a > b : a < b;
-  
-    if (worse(current, avg)) return avg;
-    if (worse(current, goal)) return goal;
-    if (worse(current, elite)) return elite;
-  
-    return current; // maintain
-  };
-
   const getOverallStatus = () => {
     if (activeTab === 'overview') return { stroke: "#6366f1", fill: "rgba(99, 102, 241, 0.2)", label: "Total" }; 
     
-    const counts = { 0: 0, 1: 0, 2: 0, 3: 0 };
+    const counts: Record<MetricRank, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
     currentMetrics.forEach(m => {
         const rank = getMetricRank(m);
-        counts[rank] = (counts[rank] || 0) + 1;
+        counts[rank] += 1;
     });
 
-    let winningRank = 3;
+    let winningRank: MetricRank = 3;
     let maxCount = -1;
 
-    for (let r = 3; r >= 0; r--) {
-       if (counts[r] >= maxCount) {
-         maxCount = counts[r];
-         winningRank = r;
+    for (const rank of [3, 2, 1, 0] as const) {
+       if (counts[rank] >= maxCount) {
+         maxCount = counts[rank];
+         winningRank = rank;
        }
     }
 
@@ -387,16 +428,20 @@ export default function PerformanceRadar() {
   };
 
   const overall = getOverallStatus();
-  
-  const currentTabInfo = activeTab === 'body' ? { score: overviewScores.body, color: PALETTE.body } :
-                         activeTab === 'mind' ? { score: overviewScores.mind, color: PALETTE.mind } :
-                         activeTab === 'family' ? { score: overviewScores.family, color: PALETTE.family } :
-                         activeTab === 'social' ? { score: overviewScores.social, color: PALETTE.social } : null;
+
+  const tabInfoByCategory: Record<Category, { score: number; color: string }> = {
+    body: { score: overviewScores.body, color: PALETTE.body },
+    mind: { score: overviewScores.mind, color: PALETTE.mind },
+    family: { score: overviewScores.family, color: PALETTE.family },
+    social: { score: overviewScores.social, color: PALETTE.social }
+  };
+
+  const currentTabInfo = activeTab === 'overview' ? null : tabInfoByCategory[activeTab];
 
   // --- Render Components ---
 
   const renderSunburst = () => {
-    const allGroups = [
+    const allGroups: Array<{ name: string; color: string; metrics: Metric[] }> = [
       { name: "Family", color: PALETTE.family, metrics: familyMetrics },
       { name: "Social", color: PALETTE.social, metrics: socialMetrics },
       { name: "Mind", color: PALETTE.mind, metrics: mindMetrics },
@@ -480,11 +525,11 @@ export default function PerformanceRadar() {
       const coords = getCoordinates(1.22, i, dataToRender.length, CHART_RADIUS); 
       const lineEnd = getCoordinates(1.05, i, dataToRender.length, CHART_RADIUS);
       
-      let textAnchor = "middle";
+      let textAnchor: React.SVGProps<SVGTextElement>['textAnchor'] = "middle";
       if (coords.x > 10) textAnchor = "start";
       else if (coords.x < -10) textAnchor = "end";
 
-      let dominantBaseline = "middle";
+      let dominantBaseline: React.SVGProps<SVGTextElement>['dominantBaseline'] = "middle";
       if (coords.y < -10) dominantBaseline = "auto"; 
       else if (coords.y > 10) dominantBaseline = "hanging"; 
 
@@ -519,25 +564,29 @@ export default function PerformanceRadar() {
         polygonStroke = overall.stroke;
     }
 
-    const mainPoints = generatePath(dataToRender, 'current', CHART_RADIUS, CHART_CENTER);
+    const mainPoints = generatePath(dataToRender, CHART_RADIUS, CHART_CENTER);
 
     const dots = dataToRender.map((item, i) => {
       let nVal;
-      let dotColor;
+      let dotColor: string;
+      let unit = '';
       
       if (isOverview) {
-          nVal = Math.min(item.current / 100, 1.0);
-          dotColor = item.color;
+          const overviewItem = item as OverviewDatum;
+          nVal = Math.min(overviewItem.current / 100, 1.0);
+          dotColor = overviewItem.color;
       } else {
-          nVal = getVisualRadius(normalize(item, item.current));
-          dotColor = getColorForMetric(item).stroke;
+          const metricItem = item as Metric;
+          nVal = getVisualRadius(normalize(metricItem, metricItem.current));
+          dotColor = getColorForMetric(metricItem).stroke;
+          unit = metricItem.unit;
       }
       
       const coords = getCoordinates(nVal, i, dataToRender.length, CHART_RADIUS);
       
       return (
         <g key={item.id} 
-           onMouseEnter={() => setHoveredPoint({ x: CHART_CENTER + coords.x, y: CHART_CENTER + coords.y, val: item.current, unit: item.unit || '', label: item.label })}
+           onMouseEnter={() => setHoveredPoint({ x: CHART_CENTER + coords.x, y: CHART_CENTER + coords.y, val: item.current, unit, label: item.label })}
            onMouseLeave={() => setHoveredPoint(null)}
            className="cursor-pointer"
         >
@@ -591,9 +640,13 @@ export default function PerformanceRadar() {
               type="week"
               value={weekInputValue(weekKey)}
               onChange={(e) => {
-                const [year, week] = e.target.value.split('-W');
-                const d = new Date(year, 0, 1 + (week - 1) * 7);
-                setWeekKey(getWeekKey(d));
+                const [yearText, weekText] = e.target.value.split('-W');
+                const year = Number(yearText);
+                const week = Number(weekText);
+                if (Number.isFinite(year) && Number.isFinite(week)) {
+                  const d = new Date(year, 0, 1 + (week - 1) * 7);
+                  setWeekKey(getWeekKey(d));
+                }
               }}
               className="border rounded px-2 py-1 text-sm bg-white"
             />
