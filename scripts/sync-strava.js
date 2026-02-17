@@ -3,6 +3,8 @@ import path from 'path';
 
 const STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token';
 const STRAVA_ACTIVITIES_URL = 'https://www.strava.com/api/v3/athlete/activities';
+const RECORD_WINDOWS = [6, 13, 26, 52];
+const ARCHIVE_PATH = 'data/strava/archive/activities.json';
 
 const toNumber = (value, fallback = 0) => {
   const n = Number(value);
@@ -111,6 +113,67 @@ const summarizeWeek = (activities, weekStartDate, weekEndDate) => {
   };
 };
 
+const summarizeRecordWindow = (activities, currentWeekStart, weeks) => {
+  const windowStart = new Date(currentWeekStart);
+  windowStart.setDate(windowStart.getDate() - (weeks - 1) * 7);
+
+  const inWindow = activities.filter((activity) => {
+    const d = toLocalDate(activity);
+    return d >= windowStart;
+  });
+
+  const runTrailWalkActivities = inWindow.filter(isRunTrailWalk);
+  const yogaActivities = inWindow.filter(isYoga);
+
+  const longestDistanceMiles = runTrailWalkActivities.reduce(
+    (max, activity) => Math.max(max, metersToMiles(toNumber(activity.distance))),
+    0
+  );
+  const longestMovingMinutes = runTrailWalkActivities.reduce(
+    (max, activity) => Math.max(max, secondsToMinutes(toNumber(activity.moving_time))),
+    0
+  );
+  const highestElevationFeet = runTrailWalkActivities.reduce(
+    (max, activity) => Math.max(max, metersToFeet(toNumber(activity.total_elevation_gain))),
+    0
+  );
+  const longestYogaMinutes = yogaActivities.reduce(
+    (max, activity) => Math.max(max, secondsToMinutes(toNumber(activity.moving_time))),
+    0
+  );
+
+  return {
+    runTrailWalk: {
+      count: runTrailWalkActivities.length,
+      longestDistanceMiles: round(longestDistanceMiles),
+      longestMovingMinutes: round(longestMovingMinutes, 1),
+      highestElevationFeet: round(highestElevationFeet)
+    },
+    yoga: {
+      count: yogaActivities.length,
+      longestMovingMinutes: round(longestYogaMinutes, 1)
+    }
+  };
+};
+
+const summarizeRecords = (activities, currentWeekStart, weeksBack, windows = RECORD_WINDOWS) => {
+  const normalizedWindows = windows
+    .map((windowWeeks) => Math.max(1, toNumber(windowWeeks, 1)))
+    .filter((windowWeeks) => windowWeeks <= weeksBack);
+
+  const windowsPayload = Object.fromEntries(
+    normalizedWindows.map((windowWeeks) => [
+      String(windowWeeks),
+      summarizeRecordWindow(activities, currentWeekStart, windowWeeks)
+    ])
+  );
+
+  return {
+    recordWeeksBack: weeksBack,
+    windows: windowsPayload
+  };
+};
+
 const refreshAccessToken = async ({ clientId, clientSecret, refreshToken }) => {
   const body = new URLSearchParams({
     client_id: clientId,
@@ -175,8 +238,60 @@ const writeJson = async (filePath, payload) => {
   await fs.writeFile(filePath, JSON.stringify(payload, null, 2));
 };
 
+const readJsonIfExists = async (filePath, fallback) => {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(raw);
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      return fallback;
+    }
+    throw error;
+  }
+};
+
+const toArchiveActivity = (activity) => ({
+  id: toNumber(activity?.id),
+  name: activity?.name ?? '',
+  sportType: activity?.sport_type || activity?.type || 'Unknown',
+  type: activity?.type ?? null,
+  startDate: activity?.start_date ?? null,
+  startDateLocal: activity?.start_date_local ?? null,
+  distanceMeters: round(toNumber(activity?.distance), 2),
+  movingSeconds: Math.round(toNumber(activity?.moving_time)),
+  elapsedSeconds: Math.round(toNumber(activity?.elapsed_time)),
+  elevationGainMeters: round(toNumber(activity?.total_elevation_gain), 2),
+  averageHeartrate: round(toNumber(activity?.average_heartrate), 1),
+  maxHeartrate: round(toNumber(activity?.max_heartrate), 1),
+  averageSpeed: round(toNumber(activity?.average_speed), 2),
+  maxSpeed: round(toNumber(activity?.max_speed), 2),
+  calories: round(toNumber(activity?.calories), 1),
+  kilojoules: round(toNumber(activity?.kilojoules), 1)
+});
+
+const mergeArchiveActivities = (existingActivities, incomingActivities) => {
+  const byId = new Map();
+  for (const activity of existingActivities) {
+    if (!activity || !activity.id) continue;
+    byId.set(String(activity.id), activity);
+  }
+  for (const activity of incomingActivities) {
+    if (!activity || !activity.id) continue;
+    byId.set(String(activity.id), activity);
+  }
+
+  return [...byId.values()].sort((a, b) => {
+    const aTime = new Date(a.startDateLocal || a.startDate || 0).getTime();
+    const bTime = new Date(b.startDateLocal || b.startDate || 0).getTime();
+    return bTime - aTime;
+  });
+};
+
 const main = async () => {
   const weeksBack = Math.max(1, toNumber(process.env.STRAVA_WEEKS, 4));
+  const recordWeeksBack = Math.max(weeksBack, toNumber(process.env.STRAVA_RECORD_WEEKS, 52));
+  const archiveWeeks = Math.max(recordWeeksBack, toNumber(process.env.STRAVA_ARCHIVE_WEEKS, recordWeeksBack));
+  const fetchWeeksBack = Math.max(recordWeeksBack, archiveWeeks);
   const windowDays = weeksBack * 7;
 
   const clientId = readRequiredEnv('STRAVA_CLIENT_ID');
@@ -187,7 +302,9 @@ const main = async () => {
   const currentWeekStart = startOfWeek(now);
   const periodStart = new Date(currentWeekStart);
   periodStart.setDate(periodStart.getDate() - (weeksBack - 1) * 7);
-  const afterUnix = Math.floor(periodStart.getTime() / 1000);
+  const fetchStart = new Date(currentWeekStart);
+  fetchStart.setDate(fetchStart.getDate() - (fetchWeeksBack - 1) * 7);
+  const fetchAfterUnix = Math.floor(fetchStart.getTime() / 1000);
 
   const token = await refreshAccessToken({ clientId, clientSecret, refreshToken });
   const accessToken = token.access_token;
@@ -196,7 +313,8 @@ const main = async () => {
     throw new Error('Strava token response missing access_token');
   }
 
-  const activities = await fetchActivities({ accessToken, afterUnix });
+  const recordActivities = await fetchActivities({ accessToken, afterUnix: fetchAfterUnix });
+  const activities = recordActivities.filter((activity) => toLocalDate(activity) >= periodStart);
 
   const runs = summarizeSport(activities, isRun);
   const runTrailWalk = summarizeSport(activities, isRunTrailWalk);
@@ -208,6 +326,28 @@ const main = async () => {
     weekEnd.setDate(weekEnd.getDate() + 7);
     return summarizeWeek(activities, weekStart, weekEnd);
   });
+  const records = summarizeRecords(recordActivities, currentWeekStart, recordWeeksBack);
+  const archiveStart = new Date(currentWeekStart);
+  archiveStart.setDate(archiveStart.getDate() - (archiveWeeks - 1) * 7);
+  const archiveActivities = recordActivities
+    .filter((activity) => toLocalDate(activity) >= archiveStart)
+    .map(toArchiveActivity);
+  const existingArchive = await readJsonIfExists(ARCHIVE_PATH, {
+    generatedAt: null,
+    archiveWeeks: 0,
+    totalActivities: 0,
+    activities: []
+  });
+  const mergedArchiveActivities = mergeArchiveActivities(
+    Array.isArray(existingArchive?.activities) ? existingArchive.activities : [],
+    archiveActivities
+  );
+  const archivePayload = {
+    generatedAt: now.toISOString(),
+    archiveWeeks,
+    totalActivities: mergedArchiveActivities.length,
+    activities: mergedArchiveActivities
+  };
 
   const payload = {
     generatedAt: now.toISOString(),
@@ -226,6 +366,7 @@ const main = async () => {
       yogaMinutesPerWeek: round(yoga.movingMinutes / weeksBack, 1),
       yogaSessionsPerWeek: round(yoga.count / weeksBack, 2)
     },
+    records,
     weeks
   };
 
@@ -234,9 +375,12 @@ const main = async () => {
   await writeJson('public/data/strava/latest.json', payload);
   await writeJson('data/strava/latest.json', payload);
   await writeJson(`data/strava/history/${todayKey}.json`, payload);
+  await writeJson(ARCHIVE_PATH, archivePayload);
 
   console.log('Strava sync complete');
   console.log(`Fetched ${activities.length} activities in the last ${windowDays} day(s)`);
+  console.log(`Computed record windows from ${recordActivities.length} activities in the last ${recordWeeksBack * 7} day(s)`);
+  console.log(`Archive now has ${archivePayload.totalActivities} activities (up to last ${archiveWeeks} week(s) per sync window)`);
 
   if (payload.refreshTokenRotated) {
     console.log('Warning: Strava returned a new refresh token. Update STRAVA_REFRESH_TOKEN secret to keep future syncs healthy.');

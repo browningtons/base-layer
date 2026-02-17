@@ -1,10 +1,11 @@
 # Strava Daily Sync Setup
 
-This repo now includes a daily Strava sync job (last 4 weeks) that updates:
+This repo includes a daily Strava sync job that updates:
 
 - `public/data/strava/latest.json` (used by the app)
 - `data/strava/latest.json`
 - `data/strava/history/YYYY-MM-DD.json`
+- `data/strava/archive/activities.json` (long-term analysis archive)
 
 ## 1. Create a Strava API App
 
@@ -47,10 +48,24 @@ Create:
 - `STRAVA_CLIENT_SECRET`
 - `STRAVA_REFRESH_TOKEN`
 
-## 4. Run the Sync
+## 4. Daily Defaults and One-Time Backfill
 
-- Manual: run the **Daily Strava Sync** workflow from Actions tab
-- Scheduled: runs every day at `09:15 UTC`
+Daily schedule uses:
+
+- `STRAVA_WEEKS=4` (dashboard)
+- `STRAVA_RECORD_WEEKS=52` (records panel)
+- `STRAVA_ARCHIVE_WEEKS=52` (archive refresh window)
+
+To bootstrap archive with 3 years of data once:
+
+1. Go to **Actions -> Daily Strava Sync -> Run workflow**
+2. Set:
+   - `strava_weeks`: `4`
+   - `record_weeks`: `52`
+   - `archive_weeks`: `156`
+3. Run it once, then keep daily defaults at `52` archive weeks.
+
+The archive file keeps merged historical records by activity ID, so your 3-year backfill stays available for analysis.
 
 ## 5. Optional Local Run
 
@@ -59,6 +74,8 @@ STRAVA_CLIENT_ID=... \
 STRAVA_CLIENT_SECRET=... \
 STRAVA_REFRESH_TOKEN=... \
 STRAVA_WEEKS=4 \
+STRAVA_RECORD_WEEKS=52 \
+STRAVA_ARCHIVE_WEEKS=156 \
 npm run sync:strava
 ```
 

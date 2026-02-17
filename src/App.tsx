@@ -4,7 +4,7 @@ import CategoryTabs from './components/CategoryTabs';
 import WeekSelector from './components/WeekSelector';
 import { BODY_METRICS, FAMILY_METRICS, MIND_METRICS, PALETTE, SOCIAL_METRICS } from './data/metrics';
 import { useWeeklyMetrics } from './hooks/useWeeklyMetrics';
-import type { ActiveTab, Category, CategoryScoreSummary, EditableMetricField, HoveredPoint, Metric, MetricRank, OverviewDatum, OverviewMode, StravaSportSummary, StravaSyncPayload, StravaWeeklySummary } from './types';
+import type { ActiveTab, Category, CategoryScoreSummary, EditableMetricField, HoveredPoint, Metric, MetricRank, OverviewDatum, OverviewMode, StravaSportSummary, StravaSyncPayload, StravaWeeklySummary, StravaWindowRecord } from './types';
 import { autoThresholds, calculateCategoryScore, getVisualRadius, getWeekKey, normalize } from './utils/scoring';
 
 // --- STATIC HELPERS ---
@@ -37,6 +37,7 @@ const describeArc = (x: number, y: number, innerRadius: number, outerRadius: num
 const CHART_RADIUS = 120;
 const CHART_CENTER = 150;
 const METRIC_TABS: Category[] = ['body', 'mind', 'family', 'social'];
+const STRAVA_RECORD_WINDOWS = ['6', '13', '26', '52'] as const;
 const isMetricTab = (tab: ActiveTab): tab is Category =>
   METRIC_TABS.includes(tab as Category);
 const roundMetric = (value: number, digits = 1) => {
@@ -226,6 +227,27 @@ export default function PerformanceRadar() {
       streaks: { runWeeks, yogaWeeks, balancedWeeks }
     };
   }, [bodyMetrics, stravaSync]);
+
+  const stravaRecordRows = useMemo(() => {
+    const recordsByWindow: Record<string, StravaWindowRecord> = stravaSync?.records?.windows ?? {};
+    return STRAVA_RECORD_WINDOWS.map((windowWeeks) => {
+      const record = recordsByWindow[windowWeeks];
+      return {
+        windowWeeks,
+        runCount: safeNumber(record?.runTrailWalk?.count, 0),
+        yogaCount: safeNumber(record?.yoga?.count, 0),
+        longestDistanceMiles: safeNumber(record?.runTrailWalk?.longestDistanceMiles, 0),
+        longestMovingMinutes: safeNumber(record?.runTrailWalk?.longestMovingMinutes, 0),
+        highestElevationFeet: safeNumber(record?.runTrailWalk?.highestElevationFeet, 0),
+        longestYogaMinutes: safeNumber(record?.yoga?.longestMovingMinutes, 0)
+      };
+    });
+  }, [stravaSync]);
+
+  const hasRecordData = useMemo(
+    () => stravaRecordRows.some((row) => row.runCount > 0 || row.yogaCount > 0),
+    [stravaRecordRows]
+  );
 
   useEffect(() => {
     if (!stravaSync) {
@@ -1049,6 +1071,40 @@ export default function PerformanceRadar() {
                           <div className="text-[10px] text-violet-700 uppercase tracking-wide">Run + Yoga</div>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <div className="text-xs uppercase tracking-wide text-amber-700 font-bold mb-3">6/13/26/52-Week Records</div>
+                      {hasRecordData ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="text-amber-700">
+                              <tr>
+                                <th className="pr-3 pb-2">Window</th>
+                                <th className="pr-3 pb-2 text-right">Longest mi</th>
+                                <th className="pr-3 pb-2 text-right">Longest min</th>
+                                <th className="pr-3 pb-2 text-right">Max climb</th>
+                                <th className="pb-2 text-right">Longest yoga</th>
+                              </tr>
+                            </thead>
+                            <tbody className="text-amber-900 divide-y divide-amber-100">
+                              {stravaRecordRows.map((row) => (
+                                <tr key={row.windowWeeks}>
+                                  <td className="pr-3 py-1.5 font-semibold">{row.windowWeeks}w</td>
+                                  <td className="pr-3 py-1.5 text-right">{row.runCount > 0 ? row.longestDistanceMiles.toFixed(1) : '-'}</td>
+                                  <td className="pr-3 py-1.5 text-right">{row.runCount > 0 ? row.longestMovingMinutes.toFixed(0) : '-'}</td>
+                                  <td className="pr-3 py-1.5 text-right">{row.runCount > 0 ? Math.round(row.highestElevationFeet).toString() : '-'}</td>
+                                  <td className="py-1.5 text-right">{row.yogaCount > 0 ? row.longestYogaMinutes.toFixed(0) : '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-amber-800 bg-white/80 border border-amber-100 rounded-lg px-3 py-2">
+                          Records will appear after the next Strava sync (needs up to 52 weeks of activities).
+                        </div>
+                      )}
                     </div>
 
                     <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">

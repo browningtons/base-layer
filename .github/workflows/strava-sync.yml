@@ -4,6 +4,19 @@ on:
   schedule:
     - cron: '15 9 * * *' # Daily at 09:15 UTC
   workflow_dispatch:
+    inputs:
+      strava_weeks:
+        description: "Weekly dashboard window"
+        required: false
+        default: "4"
+      record_weeks:
+        description: "Record panel window coverage"
+        required: false
+        default: "52"
+      archive_weeks:
+        description: "Archive fetch window (156 = 3 years)"
+        required: false
+        default: "52"
 
 permissions:
   contents: write
@@ -26,7 +39,9 @@ jobs:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
-          STRAVA_WEEKS: '4'
+          STRAVA_WEEKS: ${{ github.event.inputs.strava_weeks || '4' }}
+          STRAVA_RECORD_WEEKS: ${{ github.event.inputs.record_weeks || '52' }}
+          STRAVA_ARCHIVE_WEEKS: ${{ github.event.inputs.archive_weeks || '52' }}
         run: node scripts/sync-strava.js
 
       - name: Commit synced data

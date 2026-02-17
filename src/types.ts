@@ -81,6 +81,7 @@ export interface StravaSyncPayload {
   runTrailWalk: StravaSportSummary;
   yoga: StravaSportSummary;
   averages: StravaBodyAverages;
+  records?: StravaRecordsSummary;
   weeks: StravaWeeklySummary[];
 }
 
@@ -99,4 +100,26 @@ export interface StravaBodyAverages {
   elevationFeetPerWeek: number;
   yogaMinutesPerWeek: number;
   yogaSessionsPerWeek: number;
+}
+
+export interface StravaRecordsSummary {
+  recordWeeksBack: number;
+  windows: Record<string, StravaWindowRecord>;
+}
+
+export interface StravaWindowRecord {
+  runTrailWalk: StravaMovementWindowRecord;
+  yoga: StravaYogaWindowRecord;
+}
+
+export interface StravaMovementWindowRecord {
+  count: number;
+  longestDistanceMiles: number;
+  longestMovingMinutes: number;
+  highestElevationFeet: number;
+}
+
+export interface StravaYogaWindowRecord {
+  count: number;
+  longestMovingMinutes: number;
 }
