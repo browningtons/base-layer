@@ -1,0 +1,38 @@
+name: Daily Strava Sync
+
+on:
+  schedule:
+    - cron: '15 9 * * *' # Daily at 09:15 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync Strava data
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+          STRAVA_WINDOW_DAYS: '30'
+        run: node scripts/sync-strava.js
+
+      - name: Commit synced data
+        run: |
+          git config user.name "base-layer-bot"
+          git config user.email "actions@github.com"
+          git add public/data/strava data/strava
+          git commit -m "chore: daily strava sync" || echo "No changes"
+          git push

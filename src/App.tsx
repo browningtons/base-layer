@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Edit2, Save, ArrowUpCircle, Info, PieChart, Triangle, HelpCircle, Trophy, AlertCircle, Sparkles } from 'lucide-react';
 import CategoryTabs from './components/CategoryTabs';
 import WeekSelector from './components/WeekSelector';
 import { BODY_METRICS, FAMILY_METRICS, MIND_METRICS, PALETTE, SOCIAL_METRICS } from './data/metrics';
 import { useWeeklyMetrics } from './hooks/useWeeklyMetrics';
-import type { ActiveTab, Category, CategoryScoreSummary, EditableMetricField, HoveredPoint, Metric, MetricRank, OverviewDatum, OverviewMode } from './types';
+import type { ActiveTab, Category, CategoryScoreSummary, EditableMetricField, HoveredPoint, Metric, MetricRank, OverviewDatum, OverviewMode, StravaSportSummary, StravaSyncPayload } from './types';
 import { autoThresholds, calculateCategoryScore, getVisualRadius, getWeekKey, normalize } from './utils/scoring';
 
 // --- STATIC HELPERS ---
@@ -44,6 +44,8 @@ export default function PerformanceRadar() {
   const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
   const [weekKey, setWeekKey] = useState(getWeekKey());
   const [isEditing, setIsEditing] = useState(false);
+  const [stravaSync, setStravaSync] = useState<StravaSyncPayload | null>(null);
+  const [stravaError, setStravaError] = useState<string | null>(null);
 
   // const weeklyKey = (category) =>
   //   `base-layer:${category}:${weekKey}`;
@@ -63,6 +65,38 @@ export default function PerformanceRadar() {
   };
 
   const currentMetrics = activeTab === 'overview' ? [] : metricsByCategory[activeTab];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStravaSummary = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}data/strava/latest.json`, {
+          cache: 'no-store'
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed loading Strava summary (${response.status})`);
+        }
+
+        const payload = (await response.json()) as StravaSyncPayload;
+        if (isMounted) {
+          setStravaSync(payload);
+          setStravaError(null);
+        }
+      } catch {
+        if (isMounted) {
+          setStravaSync(null);
+          setStravaError('Strava sync data is not available yet.');
+        }
+      }
+    };
+
+    loadStravaSummary();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleUpdateMetric = (id: string, field: EditableMetricField, value: string) => {
     const val = parseFloat(value) || 0;
@@ -422,6 +456,40 @@ export default function PerformanceRadar() {
     return renderRadar();
   };
 
+  const formatWhen = (isoDate: string | null | undefined) => {
+    if (!isoDate) {
+      return 'N/A';
+    }
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return 'N/A';
+    }
+    return parsed.toLocaleString();
+  };
+
+  const renderStravaCard = (title: string, accentClasses: string, summary: StravaSportSummary) => (
+    <div className={`rounded-xl border p-4 ${accentClasses}`}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold uppercase tracking-wide">{title}</h3>
+        <span className="text-xs font-medium">{summary.count} activities</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+        <div className="bg-white/70 rounded-lg p-2">
+          <div className="text-xs text-gray-500">Distance</div>
+          <div className="text-lg font-black">{summary.distanceMiles.toFixed(1)} mi</div>
+        </div>
+        <div className="bg-white/70 rounded-lg p-2">
+          <div className="text-xs text-gray-500">Moving Time</div>
+          <div className="text-lg font-black">{summary.movingMinutes.toFixed(0)} min</div>
+        </div>
+      </div>
+      <div className="mt-3 text-xs text-gray-600 space-y-1">
+        <div>Range: {summary.minDistanceMiles.toFixed(1)}-{summary.maxDistanceMiles.toFixed(1)} mi</div>
+        <div>Latest: {summary.latest ? `${summary.latest.name} (${formatWhen(summary.latest.startDateLocal)})` : 'N/A'}</div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -429,6 +497,29 @@ export default function PerformanceRadar() {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Base Layer</h1>
           <p className="text-gray-500">Integrate Your Parts. Master Your Life</p>
         </div>
+
+        {stravaSync && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm font-bold uppercase tracking-wide text-gray-700">
+                Strava Sync (Last {stravaSync.windowDays} Days)
+              </div>
+              <div className="text-xs text-gray-500">
+                Updated {formatWhen(stravaSync.generatedAt)}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {renderStravaCard('Runs', 'border-blue-200 bg-blue-50', stravaSync.runs)}
+              {renderStravaCard('Yoga', 'border-emerald-200 bg-emerald-50', stravaSync.yoga)}
+            </div>
+          </div>
+        )}
+
+        {stravaError && (
+          <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            {stravaError}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-500">
           <WeekSelector weekKey={weekKey} onChange={setWeekKey} />

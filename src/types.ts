@@ -47,3 +47,36 @@ export interface CategoryScoreSummary {
   level: number;
   data: OverviewDatum[];
 }
+
+export interface StravaLatestActivity {
+  id: number;
+  name: string;
+  sportType: string;
+  startDateLocal: string;
+  distanceMiles: number;
+  movingMinutes: number;
+  elevationFeet: number;
+}
+
+export interface StravaSportSummary {
+  count: number;
+  distanceMiles: number;
+  movingMinutes: number;
+  elevationFeet: number;
+  minDistanceMiles: number;
+  maxDistanceMiles: number;
+  minMovingMinutes: number;
+  maxMovingMinutes: number;
+  latest: StravaLatestActivity | null;
+}
+
+export interface StravaSyncPayload {
+  generatedAt: string | null;
+  periodStart: string | null;
+  windowDays: number;
+  activitiesFetched: number;
+  tokenExpiresAt: string | null;
+  refreshTokenRotated: boolean;
+  runs: StravaSportSummary;
+  yoga: StravaSportSummary;
+}

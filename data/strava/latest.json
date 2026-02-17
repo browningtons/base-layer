@@ -1,0 +1,30 @@
+{
+  "generatedAt": null,
+  "periodStart": null,
+  "windowDays": 30,
+  "activitiesFetched": 0,
+  "tokenExpiresAt": null,
+  "refreshTokenRotated": false,
+  "runs": {
+    "count": 0,
+    "distanceMiles": 0,
+    "movingMinutes": 0,
+    "elevationFeet": 0,
+    "minDistanceMiles": 0,
+    "maxDistanceMiles": 0,
+    "minMovingMinutes": 0,
+    "maxMovingMinutes": 0,
+    "latest": null
+  },
+  "yoga": {
+    "count": 0,
+    "distanceMiles": 0,
+    "movingMinutes": 0,
+    "elevationFeet": 0,
+    "minDistanceMiles": 0,
+    "maxDistanceMiles": 0,
+    "minMovingMinutes": 0,
+    "maxMovingMinutes": 0,
+    "latest": null
+  }
+}
