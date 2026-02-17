@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "npm run test:logic",
+    "test:logic": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test tests/**/*.test.cjs",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
