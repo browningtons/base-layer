@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-02-17T06:25:59.792Z",
-  "periodStart": "2026-01-18T06:25:59.792Z",
+  "generatedAt": "2026-02-17T07:57:19.834Z",
+  "periodStart": "2026-01-25T00:00:00.000Z",
   "windowDays": 28,
-  "activitiesFetched": 18,
+  "activitiesFetched": 13,
   "tokenExpiresAt": "2026-02-17T12:19:45.000Z",
   "refreshTokenRotated": false,
   "runs": {
-    "count": 6,
-    "distanceMiles": 42.61,
-    "movingMinutes": 469.2,
-    "elevationFeet": 8641.73,
+    "count": 5,
+    "distanceMiles": 35.69,
+    "movingMinutes": 392.7,
+    "elevationFeet": 7122.7,
     "minDistanceMiles": 5.89,
     "maxDistanceMiles": 10.79,
     "minMovingMinutes": 48,
@@ -25,13 +25,13 @@
     }
   },
   "runTrailWalk": {
-    "count": 6,
-    "distanceMiles": 42.61,
-    "movingMinutes": 469.2,
-    "elevationFeet": 8641.73,
-    "minDistanceMiles": 5.89,
+    "count": 8,
+    "distanceMiles": 39.5,
+    "movingMinutes": 469.1,
+    "elevationFeet": 7498.03,
+    "minDistanceMiles": 0.76,
     "maxDistanceMiles": 10.79,
-    "minMovingMinutes": 48,
+    "minMovingMinutes": 14.2,
     "maxMovingMinutes": 142.8,
     "latest": {
       "id": 17345746666,
@@ -44,13 +44,13 @@
     }
   },
   "yoga": {
-    "count": 8,
+    "count": 5,
     "distanceMiles": 0,
-    "movingMinutes": 133.9,
+    "movingMinutes": 82.9,
     "elevationFeet": 0,
     "minDistanceMiles": 0,
     "maxDistanceMiles": 0,
-    "minMovingMinutes": 10.1,
+    "minMovingMinutes": 10.7,
     "maxMovingMinutes": 22.2,
     "latest": {
       "id": 17339980580,
@@ -64,10 +64,288 @@
   },
   "averages": {
     "weeks": 4,
-    "distanceMilesPerWeek": 10.65,
-    "elevationFeetPerWeek": 2160.43,
-    "yogaMinutesPerWeek": 33.5,
-    "yogaSessionsPerWeek": 2
+    "distanceMilesPerWeek": 9.88,
+    "elevationFeetPerWeek": 1874.51,
+    "yogaMinutesPerWeek": 20.7,
+    "yogaSessionsPerWeek": 1.25
   },
-  "weeks": []
+  "records": {
+    "recordWeeksBack": 52,
+    "windows": {
+      "6": {
+        "runTrailWalk": {
+          "count": 11,
+          "longestDistanceMiles": 10.79,
+          "longestMovingMinutes": 142.8,
+          "highestElevationFeet": 3405.51
+        },
+        "yoga": {
+          "count": 13,
+          "longestMovingMinutes": 24.5
+        }
+      },
+      "13": {
+        "runTrailWalk": {
+          "count": 25,
+          "longestDistanceMiles": 10.79,
+          "longestMovingMinutes": 142.8,
+          "highestElevationFeet": 3405.51
+        },
+        "yoga": {
+          "count": 32,
+          "longestMovingMinutes": 31.7
+        }
+      },
+      "26": {
+        "runTrailWalk": {
+          "count": 98,
+          "longestDistanceMiles": 12.13,
+          "longestMovingMinutes": 142.8,
+          "highestElevationFeet": 3405.51
+        },
+        "yoga": {
+          "count": 69,
+          "longestMovingMinutes": 51.1
+        }
+      },
+      "52": {
+        "runTrailWalk": {
+          "count": 223,
+          "longestDistanceMiles": 34.33,
+          "longestMovingMinutes": 435,
+          "highestElevationFeet": 7244.09
+        },
+        "yoga": {
+          "count": 119,
+          "longestMovingMinutes": 51.1
+        }
+      }
+    }
+  },
+  "weeks": [
+    {
+      "weekKey": "2026-02-15",
+      "weekStart": "2026-02-15T00:00:00.000Z",
+      "weekEnd": "2026-02-22T00:00:00.000Z",
+      "runs": {
+        "count": 0,
+        "distanceMiles": 0,
+        "movingMinutes": 0,
+        "elevationFeet": 0,
+        "minDistanceMiles": 0,
+        "maxDistanceMiles": 0,
+        "minMovingMinutes": 0,
+        "maxMovingMinutes": 0,
+        "latest": null
+      },
+      "runTrailWalk": {
+        "count": 0,
+        "distanceMiles": 0,
+        "movingMinutes": 0,
+        "elevationFeet": 0,
+        "minDistanceMiles": 0,
+        "maxDistanceMiles": 0,
+        "minMovingMinutes": 0,
+        "maxMovingMinutes": 0,
+        "latest": null
+      },
+      "yoga": {
+        "count": 0,
+        "distanceMiles": 0,
+        "movingMinutes": 0,
+        "elevationFeet": 0,
+        "minDistanceMiles": 0,
+        "maxDistanceMiles": 0,
+        "minMovingMinutes": 0,
+        "maxMovingMinutes": 0,
+        "latest": null
+      }
+    },
+    {
+      "weekKey": "2026-02-08",
+      "weekStart": "2026-02-08T00:00:00.000Z",
+      "weekEnd": "2026-02-15T00:00:00.000Z",
+      "runs": {
+        "count": 1,
+        "distanceMiles": 5.89,
+        "movingMinutes": 48,
+        "elevationFeet": 206.69,
+        "minDistanceMiles": 5.89,
+        "maxDistanceMiles": 5.89,
+        "minMovingMinutes": 48,
+        "maxMovingMinutes": 48,
+        "latest": {
+          "id": 17345746666,
+          "name": "Cemetery at sunset",
+          "sportType": "TrailRun",
+          "startDateLocal": "2026-02-09T17:25:29Z",
+          "distanceMiles": 5.89,
+          "movingMinutes": 47.95,
+          "elevationFeet": 206.69
+        }
+      },
+      "runTrailWalk": {
+        "count": 2,
+        "distanceMiles": 7.3,
+        "movingMinutes": 78.1,
+        "elevationFeet": 339.24,
+        "minDistanceMiles": 1.41,
+        "maxDistanceMiles": 5.89,
+        "minMovingMinutes": 30.1,
+        "maxMovingMinutes": 48,
+        "latest": {
+          "id": 17345746666,
+          "name": "Cemetery at sunset",
+          "sportType": "TrailRun",
+          "startDateLocal": "2026-02-09T17:25:29Z",
+          "distanceMiles": 5.89,
+          "movingMinutes": 47.95,
+          "elevationFeet": 206.69
+        }
+      },
+      "yoga": {
+        "count": 1,
+        "distanceMiles": 0,
+        "movingMinutes": 20,
+        "elevationFeet": 0,
+        "minDistanceMiles": 0,
+        "maxDistanceMiles": 0,
+        "minMovingMinutes": 20,
+        "maxMovingMinutes": 20,
+        "latest": {
+          "id": 17339980580,
+          "name": "Morning Yoga",
+          "sportType": "Yoga",
+          "startDateLocal": "2026-02-09T07:52:12Z",
+          "distanceMiles": 0,
+          "movingMinutes": 20.02,
+          "elevationFeet": 0
+        }
+      }
+    },
+    {
+      "weekKey": "2026-02-01",
+      "weekStart": "2026-02-01T00:00:00.000Z",
+      "weekEnd": "2026-02-08T00:00:00.000Z",
+      "runs": {
+        "count": 1,
+        "distanceMiles": 6.96,
+        "movingMinutes": 83.3,
+        "elevationFeet": 1551.84,
+        "minDistanceMiles": 6.96,
+        "maxDistanceMiles": 6.96,
+        "minMovingMinutes": 83.3,
+        "maxMovingMinutes": 83.3,
+        "latest": {
+          "id": 17266964725,
+          "name": "Afternoon Trail Run",
+          "sportType": "TrailRun",
+          "startDateLocal": "2026-02-02T17:01:28Z",
+          "distanceMiles": 6.96,
+          "movingMinutes": 83.33,
+          "elevationFeet": 1551.84
+        }
+      },
+      "runTrailWalk": {
+        "count": 2,
+        "distanceMiles": 8.61,
+        "movingMinutes": 115.4,
+        "elevationFeet": 1699.48,
+        "minDistanceMiles": 1.65,
+        "maxDistanceMiles": 6.96,
+        "minMovingMinutes": 32,
+        "maxMovingMinutes": 83.3,
+        "latest": {
+          "id": 17321656647,
+          "name": "Afternoon Walk",
+          "sportType": "Walk",
+          "startDateLocal": "2026-02-07T13:35:07Z",
+          "distanceMiles": 1.65,
+          "movingMinutes": 32.02,
+          "elevationFeet": 147.64
+        }
+      },
+      "yoga": {
+        "count": 1,
+        "distanceMiles": 0,
+        "movingMinutes": 10.7,
+        "elevationFeet": 0,
+        "minDistanceMiles": 0,
+        "maxDistanceMiles": 0,
+        "minMovingMinutes": 10.7,
+        "maxMovingMinutes": 10.7,
+        "latest": {
+          "id": 17260841180,
+          "name": "Morning Yoga",
+          "sportType": "Yoga",
+          "startDateLocal": "2026-02-02T07:32:37Z",
+          "distanceMiles": 0,
+          "movingMinutes": 10.72,
+          "elevationFeet": 0
+        }
+      }
+    },
+    {
+      "weekKey": "2026-01-25",
+      "weekStart": "2026-01-25T00:00:00.000Z",
+      "weekEnd": "2026-02-01T00:00:00.000Z",
+      "runs": {
+        "count": 3,
+        "distanceMiles": 22.84,
+        "movingMinutes": 261.4,
+        "elevationFeet": 5364.17,
+        "minDistanceMiles": 6,
+        "maxDistanceMiles": 10.79,
+        "minMovingMinutes": 58.1,
+        "maxMovingMinutes": 142.8,
+        "latest": {
+          "id": 17244329384,
+          "name": "Double bagger: Waterfal canyon and Malans",
+          "sportType": "TrailRun",
+          "startDateLocal": "2026-01-31T15:35:14Z",
+          "distanceMiles": 10.79,
+          "movingMinutes": 142.82,
+          "elevationFeet": 3405.51
+        }
+      },
+      "runTrailWalk": {
+        "count": 4,
+        "distanceMiles": 23.6,
+        "movingMinutes": 275.6,
+        "elevationFeet": 5459.32,
+        "minDistanceMiles": 0.76,
+        "maxDistanceMiles": 10.79,
+        "minMovingMinutes": 14.2,
+        "maxMovingMinutes": 142.8,
+        "latest": {
+          "id": 17244329384,
+          "name": "Double bagger: Waterfal canyon and Malans",
+          "sportType": "TrailRun",
+          "startDateLocal": "2026-01-31T15:35:14Z",
+          "distanceMiles": 10.79,
+          "movingMinutes": 142.82,
+          "elevationFeet": 3405.51
+        }
+      },
+      "yoga": {
+        "count": 3,
+        "distanceMiles": 0,
+        "movingMinutes": 52.2,
+        "elevationFeet": 0,
+        "minDistanceMiles": 0,
+        "maxDistanceMiles": 0,
+        "minMovingMinutes": 14.5,
+        "maxMovingMinutes": 22.2,
+        "latest": {
+          "id": 17230131068,
+          "name": "Lunch Yoga",
+          "sportType": "Yoga",
+          "startDateLocal": "2026-01-30T11:24:40Z",
+          "distanceMiles": 0,
+          "movingMinutes": 22.18,
+          "elevationFeet": 0
+        }
+      }
+    }
+  ]
 }
