@@ -4,7 +4,7 @@ import CategoryTabs from './components/CategoryTabs';
 import WeekSelector from './components/WeekSelector';
 import { BODY_METRICS, FAMILY_METRICS, MIND_METRICS, PALETTE, SOCIAL_METRICS } from './data/metrics';
 import { useWeeklyMetrics } from './hooks/useWeeklyMetrics';
-import type { ActiveTab, Category, CategoryScoreSummary, EditableMetricField, HoveredPoint, Metric, MetricRank, OverviewDatum, OverviewMode, StravaSportSummary, StravaSyncPayload } from './types';
+import type { ActiveTab, Category, CategoryScoreSummary, EditableMetricField, HoveredPoint, Metric, MetricRank, OverviewDatum, OverviewMode, StravaSportSummary, StravaSyncPayload, StravaWeeklySummary } from './types';
 import { autoThresholds, calculateCategoryScore, getVisualRadius, getWeekKey, normalize } from './utils/scoring';
 
 // --- STATIC HELPERS ---
@@ -43,6 +43,7 @@ const roundMetric = (value: number, digits = 1) => {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
 };
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const safeNumber = (value: number | undefined | null, fallback = 0) =>
   Number.isFinite(value) ? (value as number) : fallback;
 const resolveAveragingWeeks = (payload: StravaSyncPayload) => {
@@ -131,6 +132,100 @@ export default function PerformanceRadar() {
       safeNumber(stravaSync.yoga?.movingMinutes, 0) / averageWeeks
     );
   }, [stravaSync]);
+
+  const stravaDailyDashboard = useMemo(() => {
+    const milesGoal = safeNumber(bodyMetrics.find((metric) => metric.id === 'miles')?.goal, 0);
+    const elevationGoal = safeNumber(bodyMetrics.find((metric) => metric.id === 'elevation')?.goal, 0);
+    const yogaGoal = safeNumber(bodyMetrics.find((metric) => metric.id === 'yoga')?.goal, 0);
+
+    if (!stravaSync) {
+      return {
+        momentumScore: 0,
+        status: 'Awaiting sync',
+        nextAction: 'Trigger Strava sync to generate today\'s training brief.',
+        week: {
+          miles: { current: 0, goal: milesGoal, progress: 0 },
+          elevation: { current: 0, goal: elevationGoal, progress: 0 },
+          yoga: { current: 0, goal: yogaGoal, progress: 0 }
+        },
+        streaks: { runWeeks: 0, yogaWeeks: 0, balancedWeeks: 0 }
+      };
+    }
+
+    const orderedWeeks = [...(Array.isArray(stravaSync.weeks) ? stravaSync.weeks : [])].sort(
+      (a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime()
+    );
+    const currentWeek = orderedWeeks[0];
+    const weekMiles = safeNumber(
+      currentWeek?.runTrailWalk?.distanceMiles,
+      safeNumber(currentWeek?.runs?.distanceMiles, 0)
+    );
+    const weekElevation = safeNumber(
+      currentWeek?.runTrailWalk?.elevationFeet,
+      safeNumber(currentWeek?.runs?.elevationFeet, 0)
+    );
+    const weekYoga = safeNumber(currentWeek?.yoga?.count, 0);
+
+    const milesProgress = milesGoal > 0 ? weekMiles / milesGoal : 0;
+    const elevationProgress = elevationGoal > 0 ? weekElevation / elevationGoal : 0;
+    const yogaProgress = yogaGoal > 0 ? weekYoga / yogaGoal : 0;
+
+    const calculateStreak = (predicate: (week: StravaWeeklySummary) => boolean) => {
+      let streak = 0;
+      for (const week of orderedWeeks) {
+        if (predicate(week)) {
+          streak += 1;
+          continue;
+        }
+        break;
+      }
+      return streak;
+    };
+
+    const runWeeks = calculateStreak(
+      (week) => safeNumber(week.runTrailWalk?.count, safeNumber(week.runs?.count, 0)) > 0
+    );
+    const yogaWeeks = calculateStreak((week) => safeNumber(week.yoga?.count, 0) > 0);
+    const balancedWeeks = calculateStreak(
+      (week) =>
+        safeNumber(week.runTrailWalk?.count, safeNumber(week.runs?.count, 0)) > 0 &&
+        safeNumber(week.yoga?.count, 0) > 0
+    );
+
+    const averageProgress = (clamp01(milesProgress) + clamp01(elevationProgress) + clamp01(yogaProgress)) / 3;
+    const streakBonus = Math.min(20, runWeeks * 2 + yogaWeeks * 2 + balancedWeeks);
+    const momentumScore = Math.round(Math.min(100, averageProgress * 80 + streakBonus));
+
+    const milesRemaining = Math.max(0, milesGoal - weekMiles);
+    const elevationRemaining = Math.max(0, elevationGoal - weekElevation);
+    const yogaRemaining = Math.max(0, yogaGoal - weekYoga);
+
+    let nextAction = 'Fit targets are covered. Keep rhythm with a short recovery session.';
+    if (!currentWeek) {
+      nextAction = 'No activities logged this week. Start today with one short run or one yoga session.';
+    } else if (yogaRemaining >= 1) {
+      nextAction = `Priority: complete 1 yoga session today. ${roundMetric(yogaRemaining, 1)} sessions remain to hit this week\'s fit target.`;
+    } else if (milesRemaining > 0) {
+      nextAction = `Priority: add ${roundMetric(Math.min(6, milesRemaining), 1)} miles today to stay on weekly run target.`;
+    } else if (elevationRemaining > 0) {
+      nextAction = `Priority: get ${Math.round(Math.min(900, elevationRemaining))} ft of climbing to stay on weekly elevation target.`;
+    }
+
+    const status =
+      momentumScore >= 80 ? 'Strong momentum' : momentumScore >= 55 ? 'Building momentum' : 'Regain momentum';
+
+    return {
+      momentumScore,
+      status,
+      nextAction,
+      week: {
+        miles: { current: weekMiles, goal: milesGoal, progress: milesProgress },
+        elevation: { current: weekElevation, goal: elevationGoal, progress: elevationProgress },
+        yoga: { current: weekYoga, goal: yogaGoal, progress: yogaProgress }
+      },
+      streaks: { runWeeks, yogaWeeks, balancedWeeks }
+    };
+  }, [bodyMetrics, stravaSync]);
 
   useEffect(() => {
     if (!stravaSync) {
@@ -548,24 +643,35 @@ export default function PerformanceRadar() {
     return parsed.toLocaleString();
   };
 
-  const renderStravaCard = (title: string, accentClasses: string, summary: StravaSportSummary) => (
+  const renderStravaCard = (
+    title: string,
+    accentClasses: string,
+    summary: StravaSportSummary,
+    options?: { showDistance?: boolean }
+  ) => (
     <div className={`rounded-xl border p-4 ${accentClasses}`}>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wide">{title}</h3>
         <span className="text-xs font-medium">{summary.count} activities</span>
       </div>
-      <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
-        <div className="bg-white/70 rounded-lg p-2">
-          <div className="text-xs text-gray-500">Distance</div>
-          <div className="text-lg font-black">{summary.distanceMiles.toFixed(1)} mi</div>
-        </div>
+      <div className={`grid gap-3 mt-3 text-sm ${options?.showDistance === false ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        {options?.showDistance !== false && (
+          <div className="bg-white/70 rounded-lg p-2">
+            <div className="text-xs text-gray-500">Distance</div>
+            <div className="text-lg font-black">{summary.distanceMiles.toFixed(1)} mi</div>
+          </div>
+        )}
         <div className="bg-white/70 rounded-lg p-2">
           <div className="text-xs text-gray-500">Moving Time</div>
           <div className="text-lg font-black">{summary.movingMinutes.toFixed(0)} min</div>
         </div>
       </div>
       <div className="mt-3 text-xs text-gray-600 space-y-1">
-        <div>Range: {summary.minDistanceMiles.toFixed(1)}-{summary.maxDistanceMiles.toFixed(1)} mi</div>
+        <div>
+          {options?.showDistance === false
+            ? `Moving Range: ${summary.minMovingMinutes.toFixed(0)}-${summary.maxMovingMinutes.toFixed(0)} min`
+            : `Range: ${summary.minDistanceMiles.toFixed(1)}-${summary.maxDistanceMiles.toFixed(1)} mi`}
+        </div>
         <div>Latest: {summary.latest ? `${summary.latest.name} (${formatWhen(summary.latest.startDateLocal)})` : 'N/A'}</div>
       </div>
     </div>
@@ -721,7 +827,7 @@ export default function PerformanceRadar() {
                           <>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {renderStravaCard('Runs', 'border-blue-200 bg-blue-50', stravaSync.runs)}
-                              {renderStravaCard('Yoga', 'border-emerald-200 bg-emerald-50', stravaSync.yoga)}
+                              {renderStravaCard('Yoga', 'border-emerald-200 bg-emerald-50', stravaSync.yoga, { showDistance: false })}
                             </div>
                             <div className="rounded-xl border border-gray-200 overflow-hidden">
                               <table className="w-full text-sm text-left">
@@ -866,24 +972,94 @@ export default function PerformanceRadar() {
               <div className="w-full mt-16 space-y-4">
                 {stravaSync ? (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
-                        <div className="text-xs uppercase tracking-wide text-orange-700 font-bold mb-1">Run Volume (4w)</div>
-                        <div className="text-3xl font-black text-orange-900">{stravaSync.runs.distanceMiles.toFixed(1)} mi</div>
-                        <div className="text-xs text-orange-700 mt-1">{stravaSync.runs.count} run activities</div>
+                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-xs uppercase tracking-wide text-sky-700 font-bold mb-1">Daily Brief</div>
+                          <div className="text-sm font-semibold text-sky-900">{stravaDailyDashboard.status}</div>
+                        </div>
+                        <div className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-right">
+                          <div className="text-[10px] uppercase tracking-wide text-sky-600 font-bold">Momentum Score</div>
+                          <div className="text-2xl leading-none font-black text-sky-900">{stravaDailyDashboard.momentumScore}</div>
+                        </div>
                       </div>
-                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                        <div className="text-xs uppercase tracking-wide text-emerald-700 font-bold mb-1">Yoga Time (4w)</div>
-                        <div className="text-3xl font-black text-emerald-900">{stravaSync.yoga.movingMinutes.toFixed(0)} min</div>
-                        <div className="text-xs text-emerald-700 mt-1">{stravaSync.yoga.count} yoga sessions</div>
+                      <p className="mt-3 text-sm text-sky-900"><span className="font-semibold">Today\'s focus:</span> {stravaDailyDashboard.nextAction}</p>
+                      <div className="mt-3 text-xs text-sky-700">
+                        Data window: last {stravaSync.windowDays} days • {stravaSync.activitiesFetched} activities synced.
                       </div>
                     </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-3">
+                        This Week vs Fit Target
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>Miles</span>
+                            <span>{stravaDailyDashboard.week.miles.current.toFixed(1)} / {stravaDailyDashboard.week.miles.goal.toFixed(0)} mi</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500"
+                              style={{ width: `${Math.min(100, Math.round(stravaDailyDashboard.week.miles.progress * 100))}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>Elevation</span>
+                            <span>{Math.round(stravaDailyDashboard.week.elevation.current)} / {stravaDailyDashboard.week.elevation.goal.toFixed(0)} ft</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                            <div
+                              className="h-full bg-orange-500"
+                              style={{ width: `${Math.min(100, Math.round(stravaDailyDashboard.week.elevation.progress * 100))}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>Yoga Sessions</span>
+                            <span>{stravaDailyDashboard.week.yoga.current.toFixed(1)} / {stravaDailyDashboard.week.yoga.goal.toFixed(0)}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-500"
+                              style={{ width: `${Math.min(100, Math.round(stravaDailyDashboard.week.yoga.progress * 100))}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+                      <div className="text-xs uppercase tracking-wide text-violet-700 font-bold mb-3">Consistency Streaks</div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-lg bg-white/85 p-2 border border-violet-100">
+                          <div className="text-xl font-black text-violet-900">{stravaDailyDashboard.streaks.runWeeks}</div>
+                          <div className="text-[10px] text-violet-700 uppercase tracking-wide">Run Weeks</div>
+                        </div>
+                        <div className="rounded-lg bg-white/85 p-2 border border-violet-100">
+                          <div className="text-xl font-black text-violet-900">{stravaDailyDashboard.streaks.yogaWeeks}</div>
+                          <div className="text-[10px] text-violet-700 uppercase tracking-wide">Yoga Weeks</div>
+                        </div>
+                        <div className="rounded-lg bg-white/85 p-2 border border-violet-100">
+                          <div className="text-xl font-black text-violet-900">{stravaDailyDashboard.streaks.balancedWeeks}</div>
+                          <div className="text-[10px] text-violet-700 uppercase tracking-wide">Run + Yoga</div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
-                      <div className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2">Latest Activities</div>
+                      <div className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2">Latest Sessions</div>
                       <div className="text-sm text-gray-700 space-y-1">
                         <div>Run: {stravaSync.runs.latest ? `${stravaSync.runs.latest.name} (${formatWhen(stravaSync.runs.latest.startDateLocal)})` : 'N/A'}</div>
                         <div>Yoga: {stravaSync.yoga.latest ? `${stravaSync.yoga.latest.name} (${formatWhen(stravaSync.yoga.latest.startDateLocal)})` : 'N/A'}</div>
                       </div>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Last updated: {formatWhen(stravaSync.generatedAt)}
                     </div>
                   </>
                 ) : (
