@@ -1,6 +1,6 @@
 # Strava Daily Sync Setup
 
-This repo now includes a daily Strava sync job that updates:
+This repo now includes a daily Strava sync job (last 4 weeks) that updates:
 
 - `public/data/strava/latest.json` (used by the app)
 - `data/strava/latest.json`
@@ -58,6 +58,7 @@ Create:
 STRAVA_CLIENT_ID=... \
 STRAVA_CLIENT_SECRET=... \
 STRAVA_REFRESH_TOKEN=... \
+STRAVA_WEEKS=4 \
 npm run sync:strava
 ```
 

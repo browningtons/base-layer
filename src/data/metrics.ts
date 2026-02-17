@@ -20,7 +20,7 @@ const BODY_METRICS_INPUT = [
   { id: 'pushups', label: 'Push Ups', unit: 'max reps', current: 30, weak: 10, elite: 50, type: 'higher_better', desc: 'Max consecutive pushups.', tip: 'Do daily sets of 50% your max reps. Grease the groove.' },
   { id: 'plank', label: 'Plank', unit: 'seconds', current: 110, weak: 45, elite: 240, type: 'higher_better', desc: 'Core isometric hold time.', tip: 'Focus on active tension (squeezing glutes and abs) rather than just hanging on.' },
   { id: 'pullups', label: 'Pull Ups', unit: 'reps', current: 3, weak: 1, elite: 15, type: 'higher_better', desc: 'Max strict pullups.', tip: 'Use "negatives" (jumping up and lowering slowly) to build initial strength.' },
-  { id: 'bench', label: 'Bench', unit: 'lbs', current: 135, weak: 115, elite: 225, type: 'higher_better', desc: '1-Rep Max Bench Press.', tip: 'Focus on progressive overload; add small fractional weights every session.' }
+  { id: 'yoga', label: 'Yoga', unit: 'sessions/wk', current: 3, weak: 1, elite: 6, type: 'higher_better', desc: 'Weekly number of yoga sessions.', tip: 'Aim for 3-4 sessions each week and keep at least one session short and easy.' }
 ] satisfies MetricInput[];
 
 const MIND_METRICS_INPUT = [

@@ -36,6 +36,28 @@ const describeArc = (x: number, y: number, innerRadius: number, outerRadius: num
 // --- Config Constants ---
 const CHART_RADIUS = 120;
 const CHART_CENTER = 150;
+const METRIC_TABS: Category[] = ['body', 'mind', 'family', 'social'];
+const isMetricTab = (tab: ActiveTab): tab is Category =>
+  METRIC_TABS.includes(tab as Category);
+const roundMetric = (value: number, digits = 1) => {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+};
+const safeNumber = (value: number | undefined | null, fallback = 0) =>
+  Number.isFinite(value) ? (value as number) : fallback;
+const resolveAveragingWeeks = (payload: StravaSyncPayload) => {
+  const fromAverages = safeNumber(payload.averages?.weeks, 0);
+  if (fromAverages > 0) {
+    return fromAverages;
+  }
+
+  const fromWindow = safeNumber(payload.windowDays, 0) / 7;
+  if (fromWindow > 0) {
+    return fromWindow;
+  }
+
+  return 4;
+};
 
 export default function PerformanceRadar() {
   // ---- CORE STATE ----
@@ -64,7 +86,7 @@ export default function PerformanceRadar() {
     social: socialMetrics
   };
 
-  const currentMetrics = activeTab === 'overview' ? [] : metricsByCategory[activeTab];
+  const currentMetrics = isMetricTab(activeTab) ? metricsByCategory[activeTab] : [];
 
   useEffect(() => {
     let isMounted = true;
@@ -97,6 +119,61 @@ export default function PerformanceRadar() {
       isMounted = false;
     };
   }, []);
+
+  const yogaMinutesPerWeek = useMemo(() => {
+    if (!stravaSync) {
+      return 0;
+    }
+
+    const averageWeeks = resolveAveragingWeeks(stravaSync);
+    return safeNumber(
+      stravaSync.averages?.yogaMinutesPerWeek,
+      safeNumber(stravaSync.yoga?.movingMinutes, 0) / averageWeeks
+    );
+  }, [stravaSync]);
+
+  useEffect(() => {
+    if (!stravaSync) {
+      return;
+    }
+
+    const averageWeeks = resolveAveragingWeeks(stravaSync);
+    const movementSummary = stravaSync.runTrailWalk ?? stravaSync.runs;
+
+    const milesCurrent = roundMetric(
+      safeNumber(
+        stravaSync.averages?.distanceMilesPerWeek,
+        safeNumber(movementSummary?.distanceMiles, 0) / averageWeeks
+      )
+    );
+    const elevationCurrent = Math.round(
+      safeNumber(
+        stravaSync.averages?.elevationFeetPerWeek,
+        safeNumber(movementSummary?.elevationFeet, 0) / averageWeeks
+      )
+    );
+    const yogaSessionsCurrent = roundMetric(
+      safeNumber(
+        stravaSync.averages?.yogaSessionsPerWeek,
+        safeNumber(stravaSync.yoga?.count, 0) / averageWeeks
+      )
+    );
+
+    setBodyMetrics((prev) =>
+      prev.map((metric) => {
+        if (metric.id === 'miles') {
+          return autoThresholds({ ...metric, current: milesCurrent });
+        }
+        if (metric.id === 'elevation') {
+          return autoThresholds({ ...metric, current: elevationCurrent });
+        }
+        if (metric.id === 'yoga') {
+          return autoThresholds({ ...metric, current: yogaSessionsCurrent });
+        }
+        return metric;
+      })
+    );
+  }, [setBodyMetrics, stravaSync, weekKey]);
 
   const handleUpdateMetric = (id: string, field: EditableMetricField, value: string) => {
     const val = parseFloat(value) || 0;
@@ -234,6 +311,7 @@ export default function PerformanceRadar() {
 
   const getOverallStatus = () => {
     if (activeTab === 'overview') return { stroke: "#6366f1", fill: "rgba(99, 102, 241, 0.2)", label: "Total" }; 
+    if (!isMetricTab(activeTab)) return { stroke: "#ea580c", fill: "rgba(234, 88, 12, 0.2)", label: "Strava" };
     
     const counts: Record<MetricRank, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
     currentMetrics.forEach(m => {
@@ -268,7 +346,7 @@ export default function PerformanceRadar() {
     social: { score: overviewScores.social, color: PALETTE.social }
   };
 
-  const currentTabInfo = activeTab === 'overview' ? null : tabInfoByCategory[activeTab];
+  const currentTabInfo = isMetricTab(activeTab) ? tabInfoByCategory[activeTab] : null;
 
   // --- Render Components ---
 
@@ -453,6 +531,9 @@ export default function PerformanceRadar() {
     if (activeTab === 'overview') {
         return overviewMode === 'sunburst' ? renderSunburst() : renderRadar();
     }
+    if (activeTab === 'strava') {
+      return null;
+    }
     return renderRadar();
   };
 
@@ -490,6 +571,17 @@ export default function PerformanceRadar() {
     </div>
   );
 
+  const formatWeekRange = (weekStart: string, weekEnd: string) => {
+    const start = new Date(weekStart);
+    const end = new Date(weekEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return 'N/A';
+    }
+    const endMinusOne = new Date(end);
+    endMinusOne.setDate(endMinusOne.getDate() - 1);
+    return `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${endMinusOne.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -497,29 +589,6 @@ export default function PerformanceRadar() {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Base Layer</h1>
           <p className="text-gray-500">Integrate Your Parts. Master Your Life</p>
         </div>
-
-        {stravaSync && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm font-bold uppercase tracking-wide text-gray-700">
-                Strava Sync (Last {stravaSync.windowDays} Days)
-              </div>
-              <div className="text-xs text-gray-500">
-                Updated {formatWhen(stravaSync.generatedAt)}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {renderStravaCard('Runs', 'border-blue-200 bg-blue-50', stravaSync.runs)}
-              {renderStravaCard('Yoga', 'border-emerald-200 bg-emerald-50', stravaSync.yoga)}
-            </div>
-          </div>
-        )}
-
-        {stravaError && (
-          <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            {stravaError}
-          </div>
-        )}
 
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-500">
           <WeekSelector weekKey={weekKey} onChange={setWeekKey} />
@@ -541,9 +610,9 @@ export default function PerformanceRadar() {
                 <div className="flex justify-between items-start mb-6">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900">
-                            {activeTab === 'overview' ? 'Holistic Breakdown' : 'Metrics Details'}
+                            {activeTab === 'overview' ? 'Holistic Breakdown' : activeTab === 'strava' ? 'Strava Layer' : 'Metrics Details'}
                         </h2>
-                        {activeTab !== 'overview' && (
+                        {isMetricTab(activeTab) && (
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-sm font-semibold text-gray-500">Category Score:</span>
                                 <span className="text-2xl font-black" style={{ color: currentTabInfo?.color }}>
@@ -552,7 +621,7 @@ export default function PerformanceRadar() {
                             </div>
                         )}
                     </div>
-                    {activeTab !== 'overview' && (
+                    {isMetricTab(activeTab) && (
                         <button onClick={() => setIsEditing(!isEditing)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                             {isEditing ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
                             {isEditing ? 'Done' : 'Edit Stats'}
@@ -612,11 +681,17 @@ export default function PerformanceRadar() {
                 {/* Next Best Action or Insight */}
                 <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 shadow-sm">
                    <div className="flex items-center gap-2 mb-2 text-blue-700 font-bold text-xs uppercase tracking-wide">
-                     {activeTab === 'overview' ? <Sparkles className="w-4 h-4" /> : <ArrowUpCircle className="w-4 h-4" />} 
-                     {activeTab === 'overview' ? 'Insight of the Day' : 'Next Best Action'}
+                     {activeTab === 'overview' || activeTab === 'strava' ? <Sparkles className="w-4 h-4" /> : <ArrowUpCircle className="w-4 h-4" />} 
+                     {activeTab === 'overview' ? 'Insight of the Day' : activeTab === 'strava' ? 'Sync Status' : 'Next Best Action'}
                    </div>
                    <p className="text-base text-blue-900 font-medium">
-                     {activeTab === 'overview' ? insights.quote : getRecommendation(currentMetrics)?.text}
+                     {activeTab === 'overview'
+                        ? insights.quote
+                        : activeTab === 'strava'
+                          ? (stravaSync
+                              ? `Imported ${stravaSync.activitiesFetched} activities across the last ${stravaSync.windowDays} days.`
+                              : (stravaError || 'Waiting for Strava sync data...'))
+                          : getRecommendation(currentMetrics)?.text}
                    </p>
                 </div>
             </div>
@@ -635,6 +710,60 @@ export default function PerformanceRadar() {
                         Anything above Fit is bonus territory! Hitting <strong>Elite</strong> gives you 150 pts.
                      </p>
                   </div>
+                </div>
+              ) : activeTab === 'strava' ? (
+                <div className="space-y-6">
+                  {stravaSync ? (
+                    <>
+                      {(() => {
+                        const weeks = Array.isArray(stravaSync.weeks) ? stravaSync.weeks : [];
+                        return (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderStravaCard('Runs', 'border-blue-200 bg-blue-50', stravaSync.runs)}
+                              {renderStravaCard('Yoga', 'border-emerald-200 bg-emerald-50', stravaSync.yoga)}
+                            </div>
+                            <div className="rounded-xl border border-gray-200 overflow-hidden">
+                              <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 text-gray-500 font-medium">
+                                  <tr>
+                                    <th className="px-4 py-2">Week</th>
+                                    <th className="px-4 py-2 text-right">Run mi</th>
+                                    <th className="px-4 py-2 text-right">Run min</th>
+                                    <th className="px-4 py-2 text-right">Yoga sessions</th>
+                                    <th className="px-4 py-2 text-right">Yoga min</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                  {weeks.map((week) => (
+                                    <tr key={week.weekKey} className="hover:bg-gray-50">
+                                      <td className="px-4 py-2 font-medium text-gray-800">{formatWeekRange(week.weekStart, week.weekEnd)}</td>
+                                      <td className="px-4 py-2 text-right">{week.runs.distanceMiles.toFixed(1)}</td>
+                                      <td className="px-4 py-2 text-right">{week.runs.movingMinutes.toFixed(0)}</td>
+                                      <td className="px-4 py-2 text-right">{week.yoga.count}</td>
+                                      <td className="px-4 py-2 text-right">{week.yoga.movingMinutes.toFixed(0)}</td>
+                                    </tr>
+                                  ))}
+                                  {weeks.length === 0 && (
+                                    <tr>
+                                      <td className="px-4 py-3 text-gray-500" colSpan={5}>No weekly Strava data yet.</td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
+                        );
+                      })()}
+                      <div className="text-xs text-gray-500">
+                        Last updated: {formatWhen(stravaSync.generatedAt)}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                      {stravaError || 'Strava sync data is not available yet.'}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <table className="w-full text-sm text-left">
@@ -669,7 +798,12 @@ export default function PerformanceRadar() {
                             {isEditing ? (
                               <input type="number" className="w-16 px-2 py-1 text-right border rounded bg-white focus:ring-2 focus:ring-blue-500 outline-none" value={metric.current} onChange={(e) => handleUpdateMetric(metric.id, 'current', e.target.value)} />
                             ) : (
-                              <span className="font-bold transition-colors duration-500" style={{color: colors.fill}}>{metric.current}</span>
+                              <div className="inline-flex flex-col items-end">
+                                <span className="font-bold transition-colors duration-500" style={{color: colors.fill}}>{metric.current}</span>
+                                {metric.id === 'yoga' && yogaMinutesPerWeek > 0 && (
+                                  <span className="text-[10px] text-gray-500">{Math.round(yogaMinutesPerWeek)} min/wk</span>
+                                )}
+                              </div>
                             )}
                           </td>
                           <td className="px-4 py-2 text-right text-gray-400 hidden sm:table-cell">
@@ -692,7 +826,7 @@ export default function PerformanceRadar() {
           {/* LEFT COLUMN MOVED TO RIGHT: Radar/Sunburst Chart Section */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center relative min-h-[450px] order-first lg:order-last">
             <h2 className="absolute top-6 left-6 text-lg font-bold text-gray-900 flex items-center">
-               {activeTab === 'overview' ? (overviewMode === 'sunburst' ? 'All Metrics' : 'Summary Triangle') : 'Category Radar'}
+               {activeTab === 'overview' ? (overviewMode === 'sunburst' ? 'All Metrics' : 'Summary Triangle') : activeTab === 'strava' ? 'Strava Layer' : 'Category Radar'}
             </h2>
             
             {activeTab === 'overview' ? (
@@ -718,18 +852,58 @@ export default function PerformanceRadar() {
                     <span className="text-[10px] text-gray-400 uppercase tracking-wider">Total</span>
                   </div>
                </div>
+            ) : activeTab === 'strava' ? (
+              <div className="absolute top-6 right-6 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm bg-orange-100 text-orange-700 border border-orange-200">
+                4 Weeks
+              </div>
             ) : (
                <div className="absolute top-6 right-6 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-colors duration-500 shadow-sm" style={{ backgroundColor: overall.stroke, color: '#fff' }}>
                   {overall.label}
                </div>
             )}
             
-            {renderActiveChart()}
+            {activeTab === 'strava' ? (
+              <div className="w-full mt-16 space-y-4">
+                {stravaSync ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                        <div className="text-xs uppercase tracking-wide text-orange-700 font-bold mb-1">Run Volume (4w)</div>
+                        <div className="text-3xl font-black text-orange-900">{stravaSync.runs.distanceMiles.toFixed(1)} mi</div>
+                        <div className="text-xs text-orange-700 mt-1">{stravaSync.runs.count} run activities</div>
+                      </div>
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                        <div className="text-xs uppercase tracking-wide text-emerald-700 font-bold mb-1">Yoga Time (4w)</div>
+                        <div className="text-3xl font-black text-emerald-900">{stravaSync.yoga.movingMinutes.toFixed(0)} min</div>
+                        <div className="text-xs text-emerald-700 mt-1">{stravaSync.yoga.count} yoga sessions</div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2">Latest Activities</div>
+                      <div className="text-sm text-gray-700 space-y-1">
+                        <div>Run: {stravaSync.runs.latest ? `${stravaSync.runs.latest.name} (${formatWhen(stravaSync.runs.latest.startDateLocal)})` : 'N/A'}</div>
+                        <div>Yoga: {stravaSync.yoga.latest ? `${stravaSync.yoga.latest.name} (${formatWhen(stravaSync.yoga.latest.startDateLocal)})` : 'N/A'}</div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    {stravaError || 'Strava sync data is not available yet.'}
+                  </div>
+                )}
+              </div>
+            ) : (
+              renderActiveChart()
+            )}
             
             <div className="flex gap-4 mt-4 text-sm items-center justify-center flex-wrap">
                {activeTab === 'overview' ? (
                  <div className="text-xs text-gray-400 italic">
                     {overviewMode === 'sunburst' ? 'Hover over segments for details.' : 'The larger the triangle, the more balanced and elite your life is.'}
+                 </div>
+               ) : activeTab === 'strava' ? (
+                 <div className="text-xs text-gray-500 italic">
+                    Daily sync keeps this layer refreshed with your most recent 4 weeks of Strava runs and yoga.
                  </div>
                ) : (
                 <>

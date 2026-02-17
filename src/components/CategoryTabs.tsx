@@ -1,4 +1,4 @@
-import { Activity, Heart, LayoutDashboard, Target, Users } from 'lucide-react';
+import { Activity, Heart, LayoutDashboard, Target, Users, Flame } from 'lucide-react';
 import type { ActiveTab } from '../types';
 
 interface CategoryTabsProps {
@@ -24,6 +24,9 @@ export default function CategoryTabs({ activeTab, onTabChange }: CategoryTabsPro
       </button>
       <button onClick={() => onTabChange('social')} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'social' ? 'bg-pink-600 text-white shadow-lg shadow-pink-200' : 'bg-white text-gray-600 hover:bg-gray-100'}`}>
         <Users className="w-4 h-4 inline-block mr-2" /> Social
+      </button>
+      <button onClick={() => onTabChange('strava')} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'strava' ? 'bg-orange-600 text-white shadow-lg shadow-orange-200' : 'bg-white text-gray-600 hover:bg-gray-100'}`}>
+        <Flame className="w-4 h-4 inline-block mr-2" /> Strava
       </button>
     </div>
   );

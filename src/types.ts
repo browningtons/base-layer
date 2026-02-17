@@ -1,6 +1,6 @@
 export type MetricType = 'higher_better' | 'lower_better';
 export type Category = 'body' | 'mind' | 'family' | 'social';
-export type ActiveTab = 'overview' | Category;
+export type ActiveTab = 'overview' | Category | 'strava';
 export type OverviewMode = 'sunburst' | 'triangle';
 export type MetricRank = 0 | 1 | 2 | 3;
 export type EditableMetricField = 'current' | 'weak' | 'elite';
@@ -78,5 +78,25 @@ export interface StravaSyncPayload {
   tokenExpiresAt: string | null;
   refreshTokenRotated: boolean;
   runs: StravaSportSummary;
+  runTrailWalk: StravaSportSummary;
   yoga: StravaSportSummary;
+  averages: StravaBodyAverages;
+  weeks: StravaWeeklySummary[];
+}
+
+export interface StravaWeeklySummary {
+  weekKey: string;
+  weekStart: string;
+  weekEnd: string;
+  runs: StravaSportSummary;
+  runTrailWalk: StravaSportSummary;
+  yoga: StravaSportSummary;
+}
+
+export interface StravaBodyAverages {
+  weeks: number;
+  distanceMilesPerWeek: number;
+  elevationFeetPerWeek: number;
+  yogaMinutesPerWeek: number;
+  yogaSessionsPerWeek: number;
 }

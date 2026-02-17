@@ -1,8 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 const STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token';
 const STRAVA_ACTIVITIES_URL = 'https://www.strava.com/api/v3/athlete/activities';
 
@@ -19,6 +17,13 @@ const round = (value, digits = 2) => {
 const metersToMiles = (meters) => meters / 1609.344;
 const metersToFeet = (meters) => meters * 3.28084;
 const secondsToMinutes = (seconds) => seconds / 60;
+const startOfWeek = (dateLike) => {
+  const d = new Date(dateLike);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay()); // Sunday
+  return d;
+};
+const getWeekKey = (dateLike) => startOfWeek(dateLike).toISOString().slice(0, 10);
 
 const readRequiredEnv = (name) => {
   const value = process.env[name];
@@ -29,6 +34,10 @@ const readRequiredEnv = (name) => {
 };
 
 const isRun = (activity) => activity?.sport_type === 'Run' || activity?.type === 'Run';
+const isTrailRun = (activity) =>
+  activity?.sport_type === 'TrailRun' || activity?.type === 'TrailRun';
+const isWalk = (activity) => activity?.sport_type === 'Walk' || activity?.type === 'Walk';
+const isRunTrailWalk = (activity) => isRun(activity) || isTrailRun(activity) || isWalk(activity);
 const isYoga = (activity) => activity?.sport_type === 'Yoga' || activity?.type === 'Yoga';
 
 const toLocalDate = (activity) => {
@@ -83,6 +92,22 @@ const summarizeSport = (activities, predicate) => {
     minMovingMinutes: filtered.length ? round(Math.min(...movingMinutes), 1) : 0,
     maxMovingMinutes: filtered.length ? round(Math.max(...movingMinutes), 1) : 0,
     latest
+  };
+};
+
+const summarizeWeek = (activities, weekStartDate, weekEndDate) => {
+  const weekActivities = activities.filter((activity) => {
+    const d = toLocalDate(activity);
+    return d >= weekStartDate && d < weekEndDate;
+  });
+
+  return {
+    weekKey: getWeekKey(weekStartDate),
+    weekStart: weekStartDate.toISOString(),
+    weekEnd: weekEndDate.toISOString(),
+    runs: summarizeSport(weekActivities, isRun),
+    runTrailWalk: summarizeSport(weekActivities, isRunTrailWalk),
+    yoga: summarizeSport(weekActivities, isYoga)
   };
 };
 
@@ -151,14 +176,17 @@ const writeJson = async (filePath, payload) => {
 };
 
 const main = async () => {
-  const windowDays = Math.max(1, toNumber(process.env.STRAVA_WINDOW_DAYS, 30));
+  const weeksBack = Math.max(1, toNumber(process.env.STRAVA_WEEKS, 4));
+  const windowDays = weeksBack * 7;
 
   const clientId = readRequiredEnv('STRAVA_CLIENT_ID');
   const clientSecret = readRequiredEnv('STRAVA_CLIENT_SECRET');
   const refreshToken = readRequiredEnv('STRAVA_REFRESH_TOKEN');
 
   const now = new Date();
-  const periodStart = new Date(now.getTime() - windowDays * DAY_MS);
+  const currentWeekStart = startOfWeek(now);
+  const periodStart = new Date(currentWeekStart);
+  periodStart.setDate(periodStart.getDate() - (weeksBack - 1) * 7);
   const afterUnix = Math.floor(periodStart.getTime() / 1000);
 
   const token = await refreshAccessToken({ clientId, clientSecret, refreshToken });
@@ -171,7 +199,15 @@ const main = async () => {
   const activities = await fetchActivities({ accessToken, afterUnix });
 
   const runs = summarizeSport(activities, isRun);
+  const runTrailWalk = summarizeSport(activities, isRunTrailWalk);
   const yoga = summarizeSport(activities, isYoga);
+  const weeks = Array.from({ length: weeksBack }, (_, i) => {
+    const weekStart = new Date(currentWeekStart);
+    weekStart.setDate(weekStart.getDate() - i * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    return summarizeWeek(activities, weekStart, weekEnd);
+  });
 
   const payload = {
     generatedAt: now.toISOString(),
@@ -181,7 +217,16 @@ const main = async () => {
     tokenExpiresAt: token.expires_at ? new Date(token.expires_at * 1000).toISOString() : null,
     refreshTokenRotated: token.refresh_token && token.refresh_token !== refreshToken,
     runs,
-    yoga
+    runTrailWalk,
+    yoga,
+    averages: {
+      weeks: weeksBack,
+      distanceMilesPerWeek: round(runTrailWalk.distanceMiles / weeksBack),
+      elevationFeetPerWeek: round(runTrailWalk.elevationFeet / weeksBack),
+      yogaMinutesPerWeek: round(yoga.movingMinutes / weeksBack, 1),
+      yogaSessionsPerWeek: round(yoga.count / weeksBack, 2)
+    },
+    weeks
   };
 
   const todayKey = now.toISOString().slice(0, 10);

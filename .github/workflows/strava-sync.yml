@@ -26,7 +26,7 @@ jobs:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
-          STRAVA_WINDOW_DAYS: '30'
+          STRAVA_WEEKS: '4'
         run: node scripts/sync-strava.js
 
       - name: Commit synced data

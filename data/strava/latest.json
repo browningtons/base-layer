@@ -1,11 +1,30 @@
 {
   "generatedAt": "2026-02-17T06:25:59.792Z",
   "periodStart": "2026-01-18T06:25:59.792Z",
-  "windowDays": 30,
+  "windowDays": 28,
   "activitiesFetched": 18,
   "tokenExpiresAt": "2026-02-17T12:19:45.000Z",
   "refreshTokenRotated": false,
   "runs": {
+    "count": 6,
+    "distanceMiles": 42.61,
+    "movingMinutes": 469.2,
+    "elevationFeet": 8641.73,
+    "minDistanceMiles": 5.89,
+    "maxDistanceMiles": 10.79,
+    "minMovingMinutes": 48,
+    "maxMovingMinutes": 142.8,
+    "latest": {
+      "id": 17345746666,
+      "name": "Cemetery at sunset",
+      "sportType": "TrailRun",
+      "startDateLocal": "2026-02-09T17:25:29Z",
+      "distanceMiles": 5.89,
+      "movingMinutes": 47.95,
+      "elevationFeet": 206.69
+    }
+  },
+  "runTrailWalk": {
     "count": 6,
     "distanceMiles": 42.61,
     "movingMinutes": 469.2,
@@ -42,5 +61,13 @@
       "movingMinutes": 20.02,
       "elevationFeet": 0
     }
-  }
+  },
+  "averages": {
+    "weeks": 4,
+    "distanceMilesPerWeek": 10.65,
+    "elevationFeetPerWeek": 2160.43,
+    "yogaMinutesPerWeek": 33.5,
+    "yogaSessionsPerWeek": 2
+  },
+  "weeks": []
 }
