@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-02-17T10:05:59.689Z",
+  "generatedAt": "2026-02-18T10:05:28.628Z",
   "periodStart": "2026-01-25T00:00:00.000Z",
   "windowDays": 28,
-  "activitiesFetched": 13,
-  "tokenExpiresAt": "2026-02-17T12:19:45.000Z",
+  "activitiesFetched": 14,
+  "tokenExpiresAt": "2026-02-18T16:05:28.000Z",
   "refreshTokenRotated": false,
   "runs": {
     "count": 5,
@@ -44,21 +44,21 @@
     }
   },
   "yoga": {
-    "count": 5,
+    "count": 6,
     "distanceMiles": 0,
-    "movingMinutes": 82.9,
+    "movingMinutes": 94.9,
     "elevationFeet": 0,
     "minDistanceMiles": 0,
     "maxDistanceMiles": 0,
     "minMovingMinutes": 10.7,
     "maxMovingMinutes": 22.2,
     "latest": {
-      "id": 17339980580,
+      "id": 17427739266,
       "name": "Morning Yoga",
       "sportType": "Yoga",
-      "startDateLocal": "2026-02-09T07:52:12Z",
+      "startDateLocal": "2026-02-17T06:47:06Z",
       "distanceMiles": 0,
-      "movingMinutes": 20.02,
+      "movingMinutes": 12.05,
       "elevationFeet": 0
     }
   },
@@ -66,8 +66,8 @@
     "weeks": 4,
     "distanceMilesPerWeek": 9.88,
     "elevationFeetPerWeek": 1874.51,
-    "yogaMinutesPerWeek": 20.7,
-    "yogaSessionsPerWeek": 1.25
+    "yogaMinutesPerWeek": 23.7,
+    "yogaSessionsPerWeek": 1.5
   },
   "records": {
     "recordWeeksBack": 52,
@@ -80,7 +80,7 @@
           "highestElevationFeet": 3405.51
         },
         "yoga": {
-          "count": 13,
+          "count": 14,
           "longestMovingMinutes": 24.5
         }
       },
@@ -92,7 +92,7 @@
           "highestElevationFeet": 3405.51
         },
         "yoga": {
-          "count": 32,
+          "count": 33,
           "longestMovingMinutes": 31.7
         }
       },
@@ -104,7 +104,7 @@
           "highestElevationFeet": 3405.51
         },
         "yoga": {
-          "count": 69,
+          "count": 70,
           "longestMovingMinutes": 51.1
         }
       },
@@ -116,7 +116,7 @@
           "highestElevationFeet": 7244.09
         },
         "yoga": {
-          "count": 119,
+          "count": 120,
           "longestMovingMinutes": 51.1
         }
       }
@@ -150,15 +150,23 @@
         "latest": null
       },
       "yoga": {
-        "count": 0,
+        "count": 1,
         "distanceMiles": 0,
-        "movingMinutes": 0,
+        "movingMinutes": 12.1,
         "elevationFeet": 0,
         "minDistanceMiles": 0,
         "maxDistanceMiles": 0,
-        "minMovingMinutes": 0,
-        "maxMovingMinutes": 0,
-        "latest": null
+        "minMovingMinutes": 12.1,
+        "maxMovingMinutes": 12.1,
+        "latest": {
+          "id": 17427739266,
+          "name": "Morning Yoga",
+          "sportType": "Yoga",
+          "startDateLocal": "2026-02-17T06:47:06Z",
+          "distanceMiles": 0,
+          "movingMinutes": 12.05,
+          "elevationFeet": 0
+        }
       }
     },
     {

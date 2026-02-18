@@ -1,8 +1,26 @@
 {
-  "generatedAt": "2026-02-17T10:05:59.689Z",
+  "generatedAt": "2026-02-18T10:05:28.628Z",
   "archiveWeeks": 52,
-  "totalActivities": 367,
+  "totalActivities": 368,
   "activities": [
+    {
+      "id": 17427739266,
+      "name": "Morning Yoga",
+      "sportType": "Yoga",
+      "type": "Yoga",
+      "startDate": "2026-02-17T13:47:06Z",
+      "startDateLocal": "2026-02-17T06:47:06Z",
+      "distanceMeters": 0,
+      "movingSeconds": 723,
+      "elapsedSeconds": 723,
+      "elevationGainMeters": 0,
+      "averageHeartrate": 96.9,
+      "maxHeartrate": 137,
+      "averageSpeed": 0,
+      "maxSpeed": 0,
+      "calories": 0,
+      "kilojoules": 0
+    },
     {
       "id": 17345746666,
       "name": "Cemetery at sunset",
