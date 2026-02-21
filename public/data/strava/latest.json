@@ -1,46 +1,46 @@
 {
-  "generatedAt": "2026-02-20T09:57:09.471Z",
+  "generatedAt": "2026-02-21T09:43:59.946Z",
   "periodStart": "2026-01-25T00:00:00.000Z",
   "windowDays": 28,
-  "activitiesFetched": 14,
-  "tokenExpiresAt": "2026-02-20T15:57:09.000Z",
+  "activitiesFetched": 15,
+  "tokenExpiresAt": "2026-02-21T15:44:00.000Z",
   "refreshTokenRotated": false,
   "runs": {
-    "count": 5,
-    "distanceMiles": 35.69,
-    "movingMinutes": 392.7,
-    "elevationFeet": 7122.7,
+    "count": 6,
+    "distanceMiles": 41.73,
+    "movingMinutes": 451,
+    "elevationFeet": 8054.46,
     "minDistanceMiles": 5.89,
     "maxDistanceMiles": 10.79,
     "minMovingMinutes": 48,
     "maxMovingMinutes": 142.8,
     "latest": {
-      "id": 17345746666,
-      "name": "Cemetery at sunset",
+      "id": 17466730492,
+      "name": "Afternoon Trail Run",
       "sportType": "TrailRun",
-      "startDateLocal": "2026-02-09T17:25:29Z",
-      "distanceMiles": 5.89,
-      "movingMinutes": 47.95,
-      "elevationFeet": 206.69
+      "startDateLocal": "2026-02-20T17:05:22Z",
+      "distanceMiles": 6.05,
+      "movingMinutes": 58.25,
+      "elevationFeet": 931.76
     }
   },
   "runTrailWalk": {
-    "count": 8,
-    "distanceMiles": 39.5,
-    "movingMinutes": 469.1,
-    "elevationFeet": 7498.03,
+    "count": 9,
+    "distanceMiles": 45.55,
+    "movingMinutes": 527.3,
+    "elevationFeet": 8429.79,
     "minDistanceMiles": 0.76,
     "maxDistanceMiles": 10.79,
     "minMovingMinutes": 14.2,
     "maxMovingMinutes": 142.8,
     "latest": {
-      "id": 17345746666,
-      "name": "Cemetery at sunset",
+      "id": 17466730492,
+      "name": "Afternoon Trail Run",
       "sportType": "TrailRun",
-      "startDateLocal": "2026-02-09T17:25:29Z",
-      "distanceMiles": 5.89,
-      "movingMinutes": 47.95,
-      "elevationFeet": 206.69
+      "startDateLocal": "2026-02-20T17:05:22Z",
+      "distanceMiles": 6.05,
+      "movingMinutes": 58.25,
+      "elevationFeet": 931.76
     }
   },
   "yoga": {
@@ -64,8 +64,8 @@
   },
   "averages": {
     "weeks": 4,
-    "distanceMilesPerWeek": 9.88,
-    "elevationFeetPerWeek": 1874.51,
+    "distanceMilesPerWeek": 11.39,
+    "elevationFeetPerWeek": 2107.45,
     "yogaMinutesPerWeek": 23.7,
     "yogaSessionsPerWeek": 1.5
   },
@@ -74,7 +74,7 @@
     "windows": {
       "6": {
         "runTrailWalk": {
-          "count": 11,
+          "count": 12,
           "longestDistanceMiles": 10.79,
           "longestMovingMinutes": 142.8,
           "highestElevationFeet": 3405.51
@@ -86,7 +86,7 @@
       },
       "13": {
         "runTrailWalk": {
-          "count": 25,
+          "count": 26,
           "longestDistanceMiles": 10.79,
           "longestMovingMinutes": 142.8,
           "highestElevationFeet": 3405.51
@@ -98,7 +98,7 @@
       },
       "26": {
         "runTrailWalk": {
-          "count": 98,
+          "count": 99,
           "longestDistanceMiles": 12.13,
           "longestMovingMinutes": 142.8,
           "highestElevationFeet": 3405.51
@@ -110,7 +110,7 @@
       },
       "52": {
         "runTrailWalk": {
-          "count": 223,
+          "count": 224,
           "longestDistanceMiles": 34.33,
           "longestMovingMinutes": 435,
           "highestElevationFeet": 7244.09
@@ -128,26 +128,42 @@
       "weekStart": "2026-02-15T00:00:00.000Z",
       "weekEnd": "2026-02-22T00:00:00.000Z",
       "runs": {
-        "count": 0,
-        "distanceMiles": 0,
-        "movingMinutes": 0,
-        "elevationFeet": 0,
-        "minDistanceMiles": 0,
-        "maxDistanceMiles": 0,
-        "minMovingMinutes": 0,
-        "maxMovingMinutes": 0,
-        "latest": null
+        "count": 1,
+        "distanceMiles": 6.05,
+        "movingMinutes": 58.3,
+        "elevationFeet": 931.76,
+        "minDistanceMiles": 6.05,
+        "maxDistanceMiles": 6.05,
+        "minMovingMinutes": 58.3,
+        "maxMovingMinutes": 58.3,
+        "latest": {
+          "id": 17466730492,
+          "name": "Afternoon Trail Run",
+          "sportType": "TrailRun",
+          "startDateLocal": "2026-02-20T17:05:22Z",
+          "distanceMiles": 6.05,
+          "movingMinutes": 58.25,
+          "elevationFeet": 931.76
+        }
       },
       "runTrailWalk": {
-        "count": 0,
-        "distanceMiles": 0,
-        "movingMinutes": 0,
-        "elevationFeet": 0,
-        "minDistanceMiles": 0,
-        "maxDistanceMiles": 0,
-        "minMovingMinutes": 0,
-        "maxMovingMinutes": 0,
-        "latest": null
+        "count": 1,
+        "distanceMiles": 6.05,
+        "movingMinutes": 58.3,
+        "elevationFeet": 931.76,
+        "minDistanceMiles": 6.05,
+        "maxDistanceMiles": 6.05,
+        "minMovingMinutes": 58.3,
+        "maxMovingMinutes": 58.3,
+        "latest": {
+          "id": 17466730492,
+          "name": "Afternoon Trail Run",
+          "sportType": "TrailRun",
+          "startDateLocal": "2026-02-20T17:05:22Z",
+          "distanceMiles": 6.05,
+          "movingMinutes": 58.25,
+          "elevationFeet": 931.76
+        }
       },
       "yoga": {
         "count": 1,

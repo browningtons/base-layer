@@ -1,8 +1,26 @@
 {
-  "generatedAt": "2026-02-20T09:57:09.471Z",
+  "generatedAt": "2026-02-21T09:43:59.946Z",
   "archiveWeeks": 52,
-  "totalActivities": 368,
+  "totalActivities": 369,
   "activities": [
+    {
+      "id": 17466730492,
+      "name": "Afternoon Trail Run",
+      "sportType": "TrailRun",
+      "type": "Run",
+      "startDate": "2026-02-21T00:05:22Z",
+      "startDateLocal": "2026-02-20T17:05:22Z",
+      "distanceMeters": 9733.6,
+      "movingSeconds": 3495,
+      "elapsedSeconds": 3609,
+      "elevationGainMeters": 284,
+      "averageHeartrate": 164.5,
+      "maxHeartrate": 199,
+      "averageSpeed": 2.79,
+      "maxSpeed": 4.44,
+      "calories": 0,
+      "kilojoules": 1142.2
+    },
     {
       "id": 17427739266,
       "name": "Morning Yoga",
